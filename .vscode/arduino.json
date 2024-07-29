@@ -1,0 +1,4 @@
+{
+    "board": "arduino:avr:micro",
+    "sketch": "..\\..\\Code\\git\\projet\\OLYMPIADES-SI-1ERE\\Code\\Main\\Main.ino"
+}
