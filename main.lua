@@ -1,9 +1,10 @@
---RATHER THAN ADJUSTING THE ANGLES
---HOW ABOUT I ADJUST SCREEN POSITIONNING
---SO WHEN ITS LIKE OVER 360 * width /FOV = large_sreen_width
--- IT IS RATHER just over 0
--- for both coordinates
--- See ya
+--TO DO :
+-- make the bullets look realistic
+-- and do things when they collide walls
+-- and add multiplayer
+
+--BIG PROBLEM : HOW TO KNOW WETHER YOU DRAW WALLS OR ENTITIES ?
+-- CREATE A TO DRAW TABLE SORTED? WiTH AN IF THAT GETS THE BODY TYPE
 
 
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
@@ -12,6 +13,7 @@ local WallsHeight = 2
 local test = "nil"
 local data = {}
 local Walls = {}
+local Entities = {}
 local Debug = "Debug"
 --canvas is great
 --color mask for color
@@ -28,6 +30,9 @@ function love.load()
     love.physics.setMeter(64)
     world = love.physics.newWorld(0, 0, true)
 	-- world:setCallbacks(beginContact, endContact, preSolve, postSolve)
+    Entities = {defaultShapes = {
+        bullet = love.physics.newEdgeShape(0, 0, 0, 0)
+    }, list = {}}
     Walls = {{pos = {{0, 0}, {10, 0}}},
     {pos = {{10, 10}, {0, 10}}},
     {pos = {{0, 10}, {0, 0}}},
@@ -238,7 +243,8 @@ function love.load()
     player = { x = 90, y = 204, angle = -32*math.pi/180 , fov = math.pi/2, shape = love.physics.newCircleShape(2), mx = 0, my = 0}
     player.body = love.physics.newBody(world,player.x,player.y,"dynamic")
     player.fixture = love.physics.newFixture(player.body, player.shape, 1)
-    player.fixture:setUserData("player")for key, Wall in pairs(Walls) do
+    player.fixture:setUserData("player")
+    for key, Wall in pairs(Walls) do
         Wall.body = love.physics.newBody(world, Wall.pos[1][1], Wall.pos[1][2], "static")        -- Create the body at the first point of the wall
         -- Adjust the shape coordinates relative to the body's position
         local x1, y1 = 0, 0  -- Relative to Wall.body's position (Wall.pos[1])
@@ -311,6 +317,10 @@ function love.update(dt)
         player.fov = math.min(math.pi / 2, player.fov + math.pi/6*dt*4)
         WallsHeight = math.max(2, WallsHeight - dt*4)
     end
+    
+    if love.mouse.isDown(1) then
+        Shoot(dt)
+    end
 
 
     -- Normalize angles to be within -pi to pi
@@ -328,8 +338,9 @@ end
 function love.draw()
     local screen_width = love.graphics.getWidth()
     local large_sreen_width = 2*math.pi*screen_width/player.fov
+    local screen_height = love.graphics.getHeight()
     love.graphics.setColor(255, 0, 0, 255)
-    DrawRotatedRectangle("fill", player.x, -player.y +200, 20, 1, player.angle)
+    DrawRotatedRectangle("fill", player.x +25, -player.y +200, 10, 1, player.angle)
     love.graphics.print(fps)
 
     love.graphics.print("x: " .. tostring(player.x), 0,20)
@@ -372,14 +383,14 @@ function love.draw()
             screen_pos.s, screen_pos.e = screen_pos.s + large_sreen_width, screen_pos.e + large_sreen_width
         end
         local height = {
-            s = WallsHeight*love.graphics.getHeight() / (dist.s),
-            e = WallsHeight*love.graphics.getHeight() / (dist.e)
+            s = WallsHeight*screen_height / (dist.s),
+            e = WallsHeight*screen_height / (dist.e)
         }
         local vertices = {
-            screen_pos.s, love.graphics.getHeight() / 2 + height.s,
-            screen_pos.s, love.graphics.getHeight() / 2 - height.s,
-            screen_pos.e, love.graphics.getHeight() / 2 - height.e,
-            screen_pos.e, love.graphics.getHeight() / 2 + height.e
+            screen_pos.s, screen_height / 2 + height.s,
+            screen_pos.s, screen_height / 2 - height.s,
+            screen_pos.e, screen_height / 2 - height.e,
+            screen_pos.e, screen_height / 2 + height.e
         }
         --love.graphics.setColor((key == 1 or key == 4) and 1 or 0, (key == 2 or key == 4) and 1 or 0, key == 3 and 1 or 0)
         love.graphics.setColor(1, 63/255, 194/255)
@@ -393,8 +404,31 @@ function love.draw()
 
         --MINImap :
 
-        love.graphics.line(value.pos[1][1], -value.pos[1][2]+200, value.pos[2][1], -value.pos[2][2]+200)
+        love.graphics.line(value.pos[1][1] +25, -value.pos[1][2] +200, value.pos[2][1] + 25, -value.pos[2][2] +200)
         end
+    for key, entity in pairs(Entities.list) do
+        local x, y = entity.body:getPosition()
+        love.graphics.points(x +25, -y +200)
+
+        local relative_pos = {
+            x = x - player.x, y = y - player.y
+        }
+        ---@diagnostic disable-next-line: deprecated
+        local angle = math.atan2(relative_pos.y, relative_pos.x) - player.angle + player.fov / 2
+        local dist = math.sqrt(relative_pos.x^2 + relative_pos.y^2)
+        local screen_pos = {
+            x = screen_width - (angle) * screen_width / player.fov,
+            y = math.max(screen_height - (dist * screen_height / 100), screen_height/2)
+        }
+
+        if screen_pos.x > large_sreen_width then
+            screen_pos.x  = screen_pos.x - large_sreen_width
+        elseif screen_pos.x < -large_sreen_width+screen_width then
+            screen_pos.x = screen_pos.x + large_sreen_width
+        end
+        love.graphics.circle("fill", screen_pos.x, screen_pos.y, 100 / dist, 500)
+
+    end
 
 end
 
@@ -462,7 +496,16 @@ end
 
 
 
-
+function Shoot(dt)
+    local body = love.physics.newBody(world, player.x, player.y, "dynamic")
+    local fixture = love.physics.newFixture(body, Entities.defaultShapes.bullet, 1)
+    local angle = player.angle + math.random(-200, 200)*0.0001
+    fixture:setUserData("bullet")
+    body:setBullet(true)
+    body:applyLinearImpulse(math.cos(angle) *100, math.sin(angle) *100)
+    -- body:applyLinearImpulse(math.cos(player.angle), math.sin(player.angle))
+    table.insert(Entities.list, {body = body, fixture = fixture, angle = player.angle})
+end
 
 
 
@@ -505,3 +548,10 @@ end
 -- -- This function is empty, no actions are performed after the collision resolution
 -- -- It can be used to gather additional information or perform post-collision calculations if needed
 -- end
+
+--RATHER THAN ADJUSTING THE ANGLES
+--HOW ABOUT I ADJUST SCREEN POSITIONNING
+--SO WHEN ITS LIKE OVER 360 * width /FOV = large_sreen_width
+-- IT IS RATHER just over 0
+-- for both coordinates
+-- See ya
