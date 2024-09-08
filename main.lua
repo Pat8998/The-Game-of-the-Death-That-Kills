@@ -319,7 +319,7 @@ function love.update(dt)
     end
     
     if love.mouse.isDown(1) then
-        Shoot(dt)
+        Shoot(dt, player)
     end
 
 
@@ -496,7 +496,7 @@ end
 
 
 
-function Shoot(dt)
+function Shoot(dt, player)
     local body = love.physics.newBody(world, player.x, player.y, "dynamic")
     local fixture = love.physics.newFixture(body, Entities.defaultShapes.bullet, 1)
     local angle = player.angle + math.random(-200, 200)*0.0001
@@ -504,7 +504,7 @@ function Shoot(dt)
     body:setBullet(true)
     body:applyLinearImpulse(math.cos(angle) *100, math.sin(angle) *100)
     -- body:applyLinearImpulse(math.cos(player.angle), math.sin(player.angle))
-    table.insert(Entities.list, {body = body, fixture = fixture, angle = player.angle})
+    table.insert(Entities.list, {body = body, fixture = fixture, angle = player.angle, player = player})
 end
 
 
