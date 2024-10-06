@@ -240,10 +240,13 @@ function love.load()
         -- {{200,200}, {100, 200}},
         -- {{200,200}, {200, 100}
     }
-    player = { x = 90, y = 204, angle = -32*math.pi/180 , fov = math.pi/2, shape = love.physics.newCircleShape(2), mx = 0, my = 0}
+    -- for players = palyers.number
+    player = { x = 90, y = 204, angle = -32*math.pi/180 , fov = math.pi/2, shape = love.physics.newCircleShape(2), mx = 0, my = 0, number = 1}
     player.body = love.physics.newBody(world,player.x,player.y,"dynamic")
     player.fixture = love.physics.newFixture(player.body, player.shape, 1)
     player.fixture:setUserData("player")
+    player.fixture:setCategory(player.number)
+    -- players [player.number] = player
     for key, Wall in pairs(Walls) do
         Wall.body = love.physics.newBody(world, Wall.pos[1][1], Wall.pos[1][2], "static")        -- Create the body at the first point of the wall
         -- Adjust the shape coordinates relative to the body's position
@@ -319,7 +322,7 @@ function love.update(dt)
     end
     
     if love.mouse.isDown(1) then
-        Shoot(dt, player)
+        Shoot(dt, player, 1, "default")
     end
 
 
@@ -406,6 +409,8 @@ function love.draw()
 
         love.graphics.line(value.pos[1][1] +25, -value.pos[1][2] +200, value.pos[2][1] + 25, -value.pos[2][2] +200)
         end
+
+
     for key, entity in pairs(Entities.list) do
         local x, y = entity.body:getPosition()
         love.graphics.points(x +25, -y +200)
@@ -418,7 +423,7 @@ function love.draw()
         local dist = math.sqrt(relative_pos.x^2 + relative_pos.y^2)
         local screen_pos = {
             x = screen_width - (angle) * screen_width / player.fov,
-            y = math.max(screen_height - (dist * screen_height / 100), screen_height/2)
+            y = 500*math.exp(-dist)+screen_height/2
         }
 
         if screen_pos.x > large_sreen_width then
@@ -426,7 +431,7 @@ function love.draw()
         elseif screen_pos.x < -large_sreen_width+screen_width then
             screen_pos.x = screen_pos.x + large_sreen_width
         end
-        love.graphics.circle("fill", screen_pos.x, screen_pos.y, 100 / dist, 500)
+        love.graphics.circle("fill", screen_pos.x, screen_pos.y, math.min(100 / dist, 100), 500)
 
     end
 
@@ -496,29 +501,31 @@ end
 
 
 
-function Shoot(dt, player)
+function Shoot(dt, player, speed, Bullet_type)
     local body = love.physics.newBody(world, player.x, player.y, "dynamic")
     local fixture = love.physics.newFixture(body, Entities.defaultShapes.bullet, 1)
     local angle = player.angle + math.random(-200, 200)*0.0001
     fixture:setUserData("bullet")
     body:setBullet(true)
-    body:applyLinearImpulse(math.cos(angle) *100, math.sin(angle) *100)
-    -- body:applyLinearImpulse(math.cos(player.angle), math.sin(player.angle))
-    table.insert(Entities.list, {body = body, fixture = fixture, angle = player.angle, player = player})
+    body:applyLinearImpulse(math.cos(angle) *speed *100, math.sin(angle) *speed*100)
+    fixture:setMask(player.number)
+    Entities.list[body] = {body = body, fixture = fixture, angle = player.angle, player = player}
 end
 
 
 
--- function beginContact(a, b, coll)
--- 	Persisting = 1
--- 	local x, y = coll:getNormal()
--- 	local textA = a:getUserData()
--- 	local textB = b:getUserData()
--- -- Get the normal vector of the collision and concatenate it with the collision information
--- 	Text = Text.."\n 1.)" .. textA.." colliding with "..textB.." with a vector normal of: ("..x..", "..y..")"
--- 	love.window.setTitle ("Persisting: "..Persisting)
--- end
+function beginContact(a, b, coll)
+    -- Get userdata of the colliding objects
+    local userdataA = a:getUserData()
+    local userdataB = b:getUserData()
 
+    -- If one object is "deletable" and the other is not a "player"
+    if (userdataA == "deletable" and userdataB ~= "player") then
+        deleteObject(a:getBody())
+    elseif (userdataB == "deletable" and userdataA ~= "player") then
+        deleteObject(b:getBody())
+    end
+end
 -- function endContact(a, b, coll)
 -- 	Persisting = 0
 -- 	local textA = a:getUserData()
