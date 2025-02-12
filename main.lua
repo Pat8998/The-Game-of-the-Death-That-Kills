@@ -7,6 +7,10 @@
 -- CREATE A TO DRAW TABLE SORTED? WiTH AN IF THAT GETS THE BODY TYPE
 
 
+local Button = require("buttons")
+local Draw = require("draw")
+local InGame = require("InGame")
+--local Draw = dofile("draw.lua")
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
 local fps
 local WallsHeight = 2
@@ -15,6 +19,12 @@ local data = {}
 local Walls = {}
 local Entities = {}
 local Debug = "Debug"
+local Game = {
+    InGame = false,
+}
+local BackgroundImage = love.graphics.newImage('ayakaka.png')
+local Buttons = {}
+
 --canvas is great
 --color mask for color
 
@@ -25,13 +35,41 @@ function love.load()
     love.window.setTitle("Title")
     love.window.setMode(1920, 1080, {fullscreen = false})
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
+    Buttons = {myButton = Button:new(100, 100, 200, 50, "Click Me!"),
+    StartGame = Button:new(100, 155, 200, 50, "Start game ❤!", function()
+        print("Game Started !")
+        Game.InGame = true
+    end)
 
+    }
+    InGameCanvas = love.graphics.newCanvas(love.graphics.getWidth(), love.graphics.getHeight())    
+    blurShader = love.graphics.newShader[[
+        extern number blurSize;
+        vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords)
+        {
+            vec4 sum = vec4(0.0);
+            sum += Texel(texture, texture_coords + vec2(-blurSize, -blurSize)) * 0.05;
+            sum += Texel(texture, texture_coords + vec2( 0.0,    -blurSize)) * 0.09;
+            sum += Texel(texture, texture_coords + vec2( blurSize, -blurSize)) * 0.05;
+            sum += Texel(texture, texture_coords + vec2(-blurSize,  0.0))    * 0.09;
+            sum += Texel(texture, texture_coords)                          * 0.62;
+            sum += Texel(texture, texture_coords + vec2( blurSize,  0.0))    * 0.09;
+            sum += Texel(texture, texture_coords + vec2(-blurSize,  blurSize)) * 0.05;
+            sum += Texel(texture, texture_coords + vec2( 0.0,     blurSize)) * 0.09;
+            sum += Texel(texture, texture_coords + vec2( blurSize,  blurSize)) * 0.05;
+            return sum * color;
+        }
+    ]]
+    blurShader:send("blurSize", 1.0 / 300.0)
+
+    
 
     love.physics.setMeter(64)
     world = love.physics.newWorld(0, 0, true)
-	-- world:setCallbacks(beginContact, endContact, preSolve, postSolve)
+	world:setCallbacks(beginContact, endContact, preSolve, postSolve)
     Entities = {defaultShapes = {
-        bullet = love.physics.newEdgeShape(0, 0, 0, 0)
+        point = love.physics.newEdgeShape(0, 0, 0, 0),
+        bullet = love.physics.newCircleShape(1)
     }, list = {}}
     Walls = {{pos = {{0, 0}, {10, 0}}},
     {pos = {{10, 10}, {0, 10}}},
@@ -241,11 +279,12 @@ function love.load()
         -- {{200,200}, {200, 100}
     }
     -- for players = palyers.number
-    player = { x = 90, y = 204, angle = -32*math.pi/180 , fov = math.pi/2, shape = love.physics.newCircleShape(2), mx = 0, my = 0, number = 1}
+    player = { x = 90, y = 204, angle = -32*math.pi/180 , fov = math.pi/2, shape = love.physics.newCircleShape(2), mx = 0, my = 0, number = 1, InPauseMenu = false}
     player.body = love.physics.newBody(world,player.x,player.y,"dynamic")
     player.fixture = love.physics.newFixture(player.body, player.shape, 1)
     player.fixture:setUserData("player")
     player.fixture:setCategory(player.number)
+    player.fixture:setMask(player.number)
     -- players [player.number] = player
     for key, Wall in pairs(Walls) do
         Wall.body = love.physics.newBody(world, Wall.pos[1][1], Wall.pos[1][2], "static")        -- Create the body at the first point of the wall
@@ -257,185 +296,95 @@ function love.load()
         -- Attach the shape to the body
         Wall.fixture = love.physics.newFixture(Wall.body, Wall.shape, 1)
         Wall.fixture:setUserData("wall" .. key)
+        Wall.fixture:setCategory(16)
     end
 end
 
 
 
 function love.update(dt)
+    fps=1/dt
     local dmouse = {x=love.mouse.getPosition()-mouse.x, y= love.mouse.getPosition()-mouse.y}
     mouse.x, mouse.y = love.mouse.getPosition()
-    if not love.keyboard.isDown("lalt") and love.window.hasFocus() then
-        love.mouse.setGrabbed(true)
-        love.mouse.setVisible(false)
-        player.angle = player.angle - dmouse.x/40
-        if player.angle>2*math.pi then
-            player.angle = player.angle - 2*math.pi
-        elseif player.angle>2*math.pi then
-            player.angle = player.angle + 2*math.pi
-        end
-        if mouse.x <= 0 then
-            love.mouse.setPosition(love.graphics.getWidth(), mouse.y)
-        elseif mouse.x >= love.graphics.getWidth()-1 then
-            love.mouse.setPosition(0, mouse.y)
-        end
-        mouse.x, mouse.y = love.mouse.getPosition()
+    mouse.lb, mouse.rb, mouse.mb = love.mouse.isDown(1),love.mouse.isDown(2),love.mouse.isDown(3)
+    if Game.InGame then
+        InGame.update({
+            dt = dt,
+            player = player,                -- player table
+            dmouse = dmouse,                -- dmouse table (must contain dmouse.x)
+            mouse = mouse,                  -- mouse table (must contain x, y, lb, etc.)
+            world = world,                  -- physics world
+            WallsHeight = WallsHeight,      -- WallsHeight variable
+            Shoot = Shoot,                  -- Shoot function
+            Entities = Entities,            -- Entities table with Entities.list
+            DestroyEntity = DestroyEntity   -- function to destroy an entity
+        
+        })
     else
-        love.mouse.setGrabbed(false)
-        love.mouse.setVisible(true)
+        UpdateMenu(dt)
     end
-
-
-
-    -- if love.keyboard.isDown("left") then
-    --     player.angle = player.angle - dt * 2
-    -- elseif love.keyboard.isDown("right") then
-    --     player.angle = player.angle + dt * 2
-    -- end
-
-    local moveSpeed = dt * 500
-    if love.keyboard.isDown("lshift") then
-        moveSpeed = dt*2200
-    end
-    if love.keyboard.isDown("z") then
-         player.mx =   math.cos(player.angle) * moveSpeed
-         player.my =   math.sin(player.angle) * moveSpeed
-    elseif love.keyboard.isDown("s") then
-         player.mx = - math.cos(player.angle) * moveSpeed
-         player.my = - math.sin(player.angle) * moveSpeed
-    end
-    if love.keyboard.isDown("d") then
-         player.mx = - math.cos(player.angle+math.pi/2) * moveSpeed
-         player.my = - math.sin(player.angle+math.pi/2) * moveSpeed
-    elseif love.keyboard.isDown("q") then
-         player.mx =   math.cos(player.angle+math.pi/2) * moveSpeed
-         player.my =   math.sin(player.angle+math.pi/2) * moveSpeed
-    end
-    player.body:setLinearVelocity(player.mx, player.my)
-    player.mx, player.my = 0, 0
-    if love.mouse.isDown(2) then
-        player.fov = math.max(math.pi / 3, player.fov - math.pi/6*dt*4)
-        WallsHeight = math.min(3, WallsHeight + dt*4)
-    else
-        player.fov = math.min(math.pi / 2, player.fov + math.pi/6*dt*4)
-        WallsHeight = math.max(2, WallsHeight - dt*4)
-    end
-    
-    if love.mouse.isDown(1) then
-        Shoot(dt, player, 1, "default")
-    end
-
-
-    -- Normalize angles to be within -pi to pi
-        if player.angle < -math.pi then
-            player.angle = player.angle + 2 * math.pi
-        elseif player.angle > math.pi then
-            player.angle = player.angle - 2 * math.pi
-        end
-
-    world:update(dt)
-    player.x, player.y = player.body:getPosition()
-    fps=dt*3600
 end
+
+
+function UpdateMenu(dt)
+    for key, button in pairs(Buttons) do
+        button:update(mouse.x, mouse.y, mouse.lb)
+    end
+end
+
+
+
+
+
+
 
 function love.draw()
     local screen_width = love.graphics.getWidth()
     local large_sreen_width = 2*math.pi*screen_width/player.fov
     local screen_height = love.graphics.getHeight()
-    love.graphics.setColor(255, 0, 0, 255)
-    DrawRotatedRectangle("fill", player.x +25, -player.y +200, 10, 1, player.angle)
-    love.graphics.print(fps)
-
-    love.graphics.print("x: " .. tostring(player.x), 0,20)
-    love.graphics.print("y: " .. tostring(player.y), 0,40)
-    love.graphics.print("angle: " .. tostring(player.angle*180/math.pi), 0,60)
-	love.graphics.print(Debug, 0, 80)
-
-    love.graphics.setColor(255, 255, 255, 255)
-    local Walls = SortWalls(Walls)
-    for key, value in pairs(Walls) do
-        local relative_pos = {
-            s = {x = value.pos[1][1] - player.x, y = value.pos[1][2] - player.y},
-            e = {x = value.pos[2][1] - player.x, y = value.pos[2][2] - player.y}
-        }
-        local angle = {
----@diagnostic disable-next-line: deprecated
-            s = math.atan2(relative_pos.s.y, relative_pos.s.x) - player.angle + player.fov / 2,
----@diagnostic disable-next-line: deprecated
-            e = math.atan2(relative_pos.e.y, relative_pos.e.x) - player.angle + player.fov / 2
-        }
-        if math.abs(angle.s-angle.e) > math.pi then
-            if angle.s-angle.e >0 then
-                angle.e = angle.e + 2*math.pi
-            elseif angle.s-angle.e <0  then
-                angle.e = angle.e - 2*math.pi
-            end
-        end
-        local dist = {
-            s = math.sqrt(relative_pos.s.x^2 + relative_pos.s.y^2),
-            e = math.sqrt(relative_pos.e.x^2 + relative_pos.e.y^2)
-        }
-        local screen_pos = {
-            s = screen_width - (angle.s) * screen_width / player.fov,
-            e = screen_width - (angle.e) * screen_width / player.fov
-        }
-
-        if screen_pos.s > large_sreen_width or screen_pos.e >large_sreen_width then
-            screen_pos.s, screen_pos.e = screen_pos.s - large_sreen_width, screen_pos.e -large_sreen_width
-        elseif screen_pos.s < -large_sreen_width+screen_width or screen_pos.e < -large_sreen_width+screen_width  then
-            screen_pos.s, screen_pos.e = screen_pos.s + large_sreen_width, screen_pos.e + large_sreen_width
-        end
-        local height = {
-            s = WallsHeight*screen_height / (dist.s),
-            e = WallsHeight*screen_height / (dist.e)
-        }
-        local vertices = {
-            screen_pos.s, screen_height / 2 + height.s,
-            screen_pos.s, screen_height / 2 - height.s,
-            screen_pos.e, screen_height / 2 - height.e,
-            screen_pos.e, screen_height / 2 + height.e
-        }
-        --love.graphics.setColor((key == 1 or key == 4) and 1 or 0, (key == 2 or key == 4) and 1 or 0, key == 3 and 1 or 0)
-        love.graphics.setColor(1, 63/255, 194/255)
-        love.graphics.polygon( 'fill', vertices)
-        love.graphics.setColor(197/255, 49/255, 150/255)
-        love.graphics.polygon( 'line', vertices)
-
-        -- if key == 4 then
-        --     print(  angle.s-angle.e)
-        -- end
-
-        --MINImap :
-
-        love.graphics.line(value.pos[1][1] +25, -value.pos[1][2] +200, value.pos[2][1] + 25, -value.pos[2][2] +200)
-        end
-
-
-    for key, entity in pairs(Entities.list) do
-        local x, y = entity.body:getPosition()
-        love.graphics.points(x +25, -y +200)
-
-        local relative_pos = {
-            x = x - player.x, y = y - player.y
-        }
-        ---@diagnostic disable-next-line: deprecated
-        local angle = math.atan2(relative_pos.y, relative_pos.x) - player.angle + player.fov / 2
-        local dist = math.sqrt(relative_pos.x^2 + relative_pos.y^2)
-        local screen_pos = {
-            x = screen_width - (angle) * screen_width / player.fov,
-            y = 500*math.exp(-dist)+screen_height/2
-        }
-
-        if screen_pos.x > large_sreen_width then
-            screen_pos.x  = screen_pos.x - large_sreen_width
-        elseif screen_pos.x < -large_sreen_width+screen_width then
-            screen_pos.x = screen_pos.x + large_sreen_width
-        end
-        love.graphics.circle("fill", screen_pos.x, screen_pos.y, math.min(100 / dist, 100), 500)
-
+    if Game.InGame then
+        Draw.InGame({
+            player = player,                         -- your player table
+            fps = fps,                               -- your current FPS value
+            Debug = Debug,                           -- your debug text/variable
+            DrawRotatedRectangle = DrawRotatedRectangle, -- your custom function
+            SortWalls = SortWalls,                   -- your function to sort walls
+            Walls = Walls,                           -- your walls table
+            screen_width = love.graphics.getWidth(),
+            screen_height = love.graphics.getHeight(),
+            large_sreen_width = large_sreen_width,   -- your large screen width variable
+            WallsHeight = WallsHeight,               -- your WallsHeight variable
+            Entities = Entities                      -- your entities table
+   })
+    else
+        love.graphics.setCanvas(InGameCanvas)  -- Set the canvas as the target
+        love.graphics.clear(0, 0, 0, 0)    -- Clear it (transparent)
+        love.graphics.setCanvas()            -- Reset to the default screen
+        InGameCanvas:renderTo(function ()
+            Draw.InGame({
+                player = player,                         -- your player table
+                fps = fps,                               -- your current FPS value
+                Debug = Debug,                           -- your debug text/variable
+                DrawRotatedRectangle = DrawRotatedRectangle, -- your custom function
+                SortWalls = SortWalls,                   -- your function to sort walls
+                Walls = Walls,                           -- your walls table
+                screen_width = love.graphics.getWidth(),
+                screen_height = love.graphics.getHeight(),
+                large_sreen_width = large_sreen_width,   -- your large screen width variable
+                WallsHeight = WallsHeight,               -- your WallsHeight variable
+                Entities = Entities                      -- your entities table
+           })
+        end)
+            -- Draw the blurred canvas to the screen
+        love.graphics.setShader(blurShader)
+        love.graphics.draw(InGameCanvas, 0, 0)
+        love.graphics.setShader()  -- Reset shader for further drawing
+        Draw:Menu(Buttons)
     end
-
 end
+
+
+
 
 function love.keypressed(key)
     if key == "end" then
@@ -447,7 +396,16 @@ function love.keypressed(key)
     if key == "lalt" then
         love.mouse.setPosition(love.graphics.getWidth()/2, love.graphics.getHeight()/2)
     end
+    if key == "escape" then
+        love.graphics.captureScreenshot(setbg)
+        Game.InGame = not Game.InGame
+    end
 end
+
+function setbg(Image)
+    BackgroundImage = love.graphics.newImage(Image)
+end
+
 
 
 
@@ -506,25 +464,59 @@ function Shoot(dt, player, speed, Bullet_type)
     local fixture = love.physics.newFixture(body, Entities.defaultShapes.bullet, 1)
     local angle = player.angle + math.random(-200, 200)*0.0001
     fixture:setUserData("bullet")
-    body:setBullet(true)
-    body:applyLinearImpulse(math.cos(angle) *speed *100, math.sin(angle) *speed*100)
     fixture:setMask(player.number)
-    Entities.list[body] = {body = body, fixture = fixture, angle = player.angle, player = player}
+    fixture:setCategory(player.number)
+    body:setBullet(true)
+    body:applyLinearImpulse(math.cos(angle) *speed , math.sin(angle) *speed)
+    Entities.list[body] = {body = body, fixture = fixture, angle = player.angle, player = player, life = 2}
 end
 
-
+function DestroyEntity(entity)
+    print(entity)
+    if entity ~= nil then 
+        local body = entity.body
+        Entities.list[body].body:destroy()  -- Destroy the body
+        Entities.list[body] = nil           -- Remove the object from the table
+    end
+end
 
 function beginContact(a, b, coll)
+    print ("colliding" , a:getUserData() , "with" , b:getUserData())
+    Debug ="colliding" .. a:getUserData() .. "with" .. b:getUserData()
     -- Get userdata of the colliding objects
     local userdataA = a:getUserData()
     local userdataB = b:getUserData()
 
     -- If one object is "deletable" and the other is not a "player"
-    if (userdataA == "deletable" and userdataB ~= "player") then
-        deleteObject(a:getBody())
-    elseif (userdataB == "deletable" and userdataA ~= "player") then
-        deleteObject(b:getBody())
+    if userdataA == "bullet" or userdataB == "bullet" then
+        if userdataA == "bullet" then
+            bullet = a
+            other = b
+        else
+            bullet = b
+            other = a
+        end
+        if other:getUserData() == "player" or other:getUserData() == "mob" then
+            --ADD THZE PLAYER HEALTHE SYSTEM LOLLL
+        elseif other:getUserData():match("^wall") then
+            --idk put an effect on the wall or smth
+        end
+        DestroyEntity(Entities.list[bullet:getBody()])
     end
+end
+
+
+
+function endContact(a, b, coll)
+    -- print("End Contact")
+end
+
+function preSolve(a, b, coll)
+    -- print("Pre Solve Contact")
+end
+
+function postSolve(a, b, coll, normalImpulse1, tangentImpulse1, normalImpulse2, tangentImpulse2)
+    -- print("Post Solve Contact")
 end
 -- function endContact(a, b, coll)
 -- 	Persisting = 0
