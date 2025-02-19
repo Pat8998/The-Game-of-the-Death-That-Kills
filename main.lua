@@ -9,14 +9,15 @@
 
 local Button = require("buttons")
 local Draw = require("draw")
-local InGame = require("InGame")
+local InGame = require("ingame")
+local Walls = require("walls")
 --local Draw = dofile("draw.lua")
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
 local fps
 local WallsHeight = 2
 local test = "nil"
 local data = {}
-local Walls = {}
+local Map = {walls = {list = {}}}
 local Entities = {}
 local Debug = "Debug"
 local Game = {
@@ -35,11 +36,17 @@ function love.load()
     love.window.setTitle("Title")
     love.window.setMode(1920, 1080, {fullscreen = false})
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
-    Buttons = {myButton = Button:new(100, 100, 200, 50, "Click Me!"),
-    StartGame = Button:new(100, 155, 200, 50, "Start game ❤!", function()
-        print("Game Started !")
-        Game.InGame = true
-    end)
+    local screen_width, screen_height = love.graphics.getWidth(), love.graphics.getHeight()
+    Buttons = {
+        myButton = Button:new(screen_width/2  -100, 200, 200, 50, "Click Me!"),
+        StartGame = Button:new(screen_width/2 -100, 300, 200, 50, "Start game ❤!", function()
+            print("Game Started !")
+            Game.InGame = true
+        end),
+        GenerateWalls = Button:new(screen_width/2 -100, 400, 200, 50, "Generate Walls", function()
+            Walls:clear(Map.walls.list)   -- Clear the walls list
+            Map.walls.list = Walls:generate(20)
+        end)
 
     }
     InGameCanvas = love.graphics.newCanvas(love.graphics.getWidth(), love.graphics.getHeight())    
@@ -60,7 +67,7 @@ function love.load()
             return sum * color;
         }
     ]]
-    blurShader:send("blurSize", 1.0 / 300.0)
+    blurShader:send("blurSize", 1.0 / 100.0)
 
     
 
@@ -71,222 +78,9 @@ function love.load()
         point = love.physics.newEdgeShape(0, 0, 0, 0),
         bullet = love.physics.newCircleShape(1)
     }, list = {}}
-    Walls = {{pos = {{0, 0}, {10, 0}}},
-    {pos = {{10, 10}, {0, 10}}},
-    {pos = {{0, 10}, {0, 0}}},
-    {pos = {{20, 0}, {20, 10}}},
-    {pos = {{20, 10}, {10, 10}}},
-    {pos = {{30, 10}, {20, 10}}},
-    {pos = {{20, 10}, {20, 0}}},
-    {pos = {{30, 0}, {40, 0}}},
-    {pos = {{40, 10}, {30, 10}}},
-    {pos = {{50, 0}, {50, 10}}},
-    {pos = {{50, 10}, {40, 10}}},
-    {pos = {{60, 10}, {50, 10}}},
-    {pos = {{50, 10}, {50, 0}}},
-    {pos = {{70, 0}, {70, 10}}},
-    {pos = {{70, 10}, {60, 10}}},
-    {pos = {{70, 0}, {80, 0}}},
-    {pos = {{80, 10}, {70, 10}}},
-    {pos = {{70, 10}, {70, 0}}},
-    {pos = {{80, 0}, {90, 0}}},
-    {pos = {{90, 10}, {80, 10}}},
-    {pos = {{100, 0}, {100, 10}}},
-    {pos = {{100, 10}, {90, 10}}},
-    {pos = {{10, 10}, {10, 20}}},
-    {pos = {{10, 20}, {0, 20}}},
-    {pos = {{0, 20}, {0, 10}}},
-    {pos = {{20, 10}, {20, 20}}},
-    {pos = {{10, 20}, {10, 10}}},
-    {pos = {{30, 10}, {30, 20}}},
-    {pos = {{20, 20}, {20, 10}}},
-    {pos = {{40, 10}, {40, 20}}},
-    {pos = {{40, 20}, {30, 20}}},
-    {pos = {{30, 20}, {30, 10}}},
-    {pos = {{40, 10}, {50, 10}}},
-    {pos = {{40, 20}, {40, 10}}},
-    {pos = {{50, 10}, {60, 10}}},
-    {pos = {{60, 10}, {60, 20}}},
-    {pos = {{70, 10}, {70, 20}}},
-    {pos = {{60, 20}, {60, 10}}},
-    {pos = {{80, 20}, {70, 20}}},
-    {pos = {{70, 20}, {70, 10}}},
-    {pos = {{80, 10}, {90, 10}}},
-    {pos = {{90, 20}, {80, 20}}},
-    {pos = {{100, 10}, {100, 20}}},
-    {pos = {{10, 20}, {10, 30}}},
-    {pos = {{0, 30}, {0, 20}}},
-    {pos = {{10, 20}, {20, 20}}},
-    {pos = {{10, 30}, {10, 20}}},
-    {pos = {{20, 20}, {30, 20}}},
-    {pos = {{30, 20}, {30, 30}}},
-    {pos = {{30, 20}, {40, 20}}},
-    {pos = {{30, 30}, {30, 20}}},
-    {pos = {{40, 20}, {50, 20}}},
-    {pos = {{50, 30}, {40, 30}}},
-    {pos = {{60, 20}, {60, 30}}},
-    {pos = {{60, 30}, {50, 30}}},
-    {pos = {{60, 20}, {70, 20}}},
-    {pos = {{60, 30}, {60, 20}}},
-    {pos = {{70, 20}, {80, 20}}},
-    {pos = {{80, 20}, {80, 30}}},
-    {pos = {{90, 20}, {90, 30}}},
-    {pos = {{90, 30}, {80, 30}}},
-    {pos = {{80, 30}, {80, 20}}},
-    {pos = {{100, 20}, {100, 30}}},
-    {pos = {{90, 30}, {90, 20}}},
-    {pos = {{0, 40}, {0, 30}}},
-    {pos = {{20, 40}, {10, 40}}},
-    {pos = {{20, 30}, {30, 30}}},
-    {pos = {{30, 40}, {20, 40}}},
-    {pos = {{30, 30}, {40, 30}}},
-    {pos = {{40, 40}, {30, 40}}},
-    {pos = {{40, 30}, {50, 30}}},
-    {pos = {{50, 40}, {40, 40}}},
-    {pos = {{60, 30}, {60, 40}}},
-    {pos = {{70, 40}, {60, 40}}},
-    {pos = {{60, 40}, {60, 30}}},
-    {pos = {{70, 30}, {80, 30}}},
-    {pos = {{80, 40}, {70, 40}}},
-    {pos = {{90, 30}, {90, 40}}},
-    {pos = {{100, 30}, {100, 40}}},
-    {pos = {{90, 40}, {90, 30}}},
-    {pos = {{10, 40}, {10, 50}}},
-    {pos = {{0, 50}, {0, 40}}},
-    {pos = {{10, 40}, {20, 40}}},
-    {pos = {{10, 50}, {10, 40}}},
-    {pos = {{30, 40}, {30, 50}}},
-    {pos = {{30, 50}, {20, 50}}},
-    {pos = {{30, 40}, {40, 40}}},
-    {pos = {{40, 50}, {30, 50}}},
-    {pos = {{30, 50}, {30, 40}}},
-    {pos = {{40, 40}, {50, 40}}},
-    {pos = {{50, 50}, {40, 50}}},
-    {pos = {{50, 40}, {60, 40}}},
-    {pos = {{60, 40}, {60, 50}}},
-    {pos = {{60, 40}, {70, 40}}},
-    {pos = {{60, 50}, {60, 40}}},
-    {pos = {{80, 40}, {80, 50}}},
-    {pos = {{80, 50}, {70, 50}}},
-    {pos = {{90, 40}, {90, 50}}},
-    {pos = {{80, 50}, {80, 40}}},
-    {pos = {{100, 40}, {100, 50}}},
-    {pos = {{90, 50}, {90, 40}}},
-    {pos = {{0, 50}, {10, 50}}},
-    {pos = {{0, 60}, {0, 50}}},
-    {pos = {{10, 50}, {20, 50}}},
-    {pos = {{20, 50}, {20, 60}}},
-    {pos = {{20, 60}, {10, 60}}},
-    {pos = {{20, 50}, {30, 50}}},
-    {pos = {{20, 60}, {20, 50}}},
-    {pos = {{30, 50}, {40, 50}}},
-    {pos = {{40, 60}, {30, 60}}},
-    {pos = {{50, 60}, {40, 60}}},
-    {pos = {{60, 60}, {50, 60}}},
-    {pos = {{70, 50}, {70, 60}}},
-    {pos = {{70, 60}, {60, 60}}},
-    {pos = {{80, 50}, {80, 60}}},
-    {pos = {{70, 60}, {70, 50}}},
-    {pos = {{80, 50}, {90, 50}}},
-    {pos = {{80, 60}, {80, 50}}},
-    {pos = {{90, 50}, {100, 50}}},
-    {pos = {{100, 50}, {100, 60}}},
-    {pos = {{10, 70}, {0, 70}}},
-    {pos = {{0, 70}, {0, 60}}},
-    {pos = {{10, 60}, {20, 60}}},
-    {pos = {{20, 70}, {10, 70}}},
-    {pos = {{20, 60}, {30, 60}}},
-    {pos = {{30, 70}, {20, 70}}},
-    {pos = {{40, 60}, {40, 70}}},
-    {pos = {{40, 70}, {30, 70}}},
-    {pos = {{40, 60}, {50, 60}}},
-    {pos = {{50, 60}, {50, 70}}},
-    {pos = {{40, 70}, {40, 60}}},
-    {pos = {{60, 60}, {60, 70}}},
-    {pos = {{50, 70}, {50, 60}}},
-    {pos = {{60, 60}, {70, 60}}},
-    {pos = {{70, 60}, {70, 70}}},
-    {pos = {{60, 70}, {60, 60}}},
-    {pos = {{80, 60}, {80, 70}}},
-    {pos = {{70, 70}, {70, 60}}},
-    {pos = {{90, 70}, {80, 70}}},
-    {pos = {{80, 70}, {80, 60}}},
-    {pos = {{100, 60}, {100, 70}}},
-    {pos = {{100, 70}, {90, 70}}},
-    {pos = {{10, 70}, {10, 80}}},
-    {pos = {{0, 80}, {0, 70}}},
-    {pos = {{10, 70}, {20, 70}}},
-    {pos = {{20, 80}, {10, 80}}},
-    {pos = {{10, 80}, {10, 70}}},
-    {pos = {{20, 70}, {30, 70}}},
-    {pos = {{30, 80}, {20, 80}}},
-    {pos = {{30, 70}, {40, 70}}},
-    {pos = {{40, 70}, {50, 70}}},
-    {pos = {{50, 80}, {40, 80}}},
-    {pos = {{60, 70}, {60, 80}}},
-    {pos = {{70, 80}, {60, 80}}},
-    {pos = {{60, 80}, {60, 70}}},
-    {pos = {{70, 70}, {80, 70}}},
-    {pos = {{80, 70}, {80, 80}}},
-    {pos = {{90, 70}, {90, 80}}},
-    {pos = {{80, 80}, {80, 70}}},
-    {pos = {{90, 70}, {100, 70}}},
-    {pos = {{100, 70}, {100, 80}}},
-    {pos = {{90, 80}, {90, 70}}},
-    {pos = {{0, 90}, {0, 80}}},
-    {pos = {{20, 80}, {20, 90}}},
-    {pos = {{20, 90}, {10, 90}}},
-    {pos = {{30, 90}, {20, 90}}},
-    {pos = {{20, 90}, {20, 80}}},
-    {pos = {{30, 80}, {40, 80}}},
-    {pos = {{40, 90}, {30, 90}}},
-    {pos = {{50, 80}, {50, 90}}},
-    {pos = {{50, 90}, {40, 90}}},
-    {pos = {{50, 80}, {60, 80}}},
-    {pos = {{60, 80}, {60, 90}}},
-    {pos = {{50, 90}, {50, 80}}},
-    {pos = {{70, 80}, {70, 90}}},
-    {pos = {{60, 90}, {60, 80}}},
-    {pos = {{70, 80}, {80, 80}}},
-    {pos = {{80, 90}, {70, 90}}},
-    {pos = {{70, 90}, {70, 80}}},
-    {pos = {{80, 80}, {90, 80}}},
-    {pos = {{100, 80}, {100, 90}}},
-    {pos = {{100, 90}, {90, 90}}},
-    {pos = {{0, 90}, {10, 90}}},
-    {pos = {{10, 90}, {10, 100}}},
-    {pos = {{0, 100}, {0, 90}}},
-    {pos = {{10, 90}, {20, 90}}},
-    {pos = {{10, 100}, {10, 90}}},
-    {pos = {{20, 90}, {30, 90}}},
-    {pos = {{30, 90}, {40, 90}}},
-    {pos = {{40, 90}, {40, 100}}},
-    {pos = {{40, 100}, {30, 100}}},
-    {pos = {{40, 90}, {50, 90}}},
-    {pos = {{40, 100}, {40, 90}}},
-    {pos = {{50, 90}, {60, 90}}},
-    {pos = {{60, 100}, {50, 100}}},
-    {pos = {{60, 90}, {70, 90}}},
-    {pos = {{70, 90}, {80, 90}}},
-    {pos = {{80, 100}, {70, 100}}},
-    {pos = {{80, 90}, {90, 90}}},
-    {pos = {{90, 100}, {80, 100}}},
-    {pos = {{90, 90}, {100, 90}}},
-    {pos = {{100, 90}, {100, 100}}}
-        -- {{100,100}, {100, 200}},
-        --  {{100,100}, {200, 100}},
-        -- {{200,200}, {100, 200}},
-        -- {{200,200}, {200, 100}
-    }
-    -- for players = palyers.number
-    player = { x = 90, y = 204, angle = -32*math.pi/180 , fov = math.pi/2, shape = love.physics.newCircleShape(2), mx = 0, my = 0, number = 1, InPauseMenu = false}
-    player.body = love.physics.newBody(world,player.x,player.y,"dynamic")
-    player.fixture = love.physics.newFixture(player.body, player.shape, 1)
-    player.fixture:setUserData("player")
-    player.fixture:setCategory(player.number)
-    player.fixture:setMask(player.number)
-    -- players [player.number] = player
-    for key, Wall in pairs(Walls) do
+
+    Map.walls.list = Walls.default
+    for key, Wall in pairs(Map.walls.list) do
         Wall.body = love.physics.newBody(world, Wall.pos[1][1], Wall.pos[1][2], "static")        -- Create the body at the first point of the wall
         -- Adjust the shape coordinates relative to the body's position
         local x1, y1 = 0, 0  -- Relative to Wall.body's position (Wall.pos[1])
@@ -298,6 +92,16 @@ function love.load()
         Wall.fixture:setUserData("wall" .. key)
         Wall.fixture:setCategory(16)
     end
+
+    -- for players = palyers.number
+    player = { x = 90, y = 204, angle = -32*math.pi/180 , fov = math.pi/2, shape = love.physics.newCircleShape(2), mx = 0, my = 0, number = 1, InPauseMenu = false}
+    player.body = love.physics.newBody(world,player.x,player.y,"dynamic")
+    player.fixture = love.physics.newFixture(player.body, player.shape, 1)
+    player.fixture:setUserData("player")
+    player.fixture:setCategory(player.number)
+    player.fixture:setMask(player.number)
+    -- players [player.number] = player
+
 end
 
 
@@ -349,7 +153,7 @@ function love.draw()
             Debug = Debug,                           -- your debug text/variable
             DrawRotatedRectangle = DrawRotatedRectangle, -- your custom function
             SortWalls = SortWalls,                   -- your function to sort walls
-            Walls = Walls,                           -- your walls table
+            Walls = Map.walls.list,                           -- your walls table
             screen_width = love.graphics.getWidth(),
             screen_height = love.graphics.getHeight(),
             large_sreen_width = large_sreen_width,   -- your large screen width variable
@@ -367,7 +171,7 @@ function love.draw()
                 Debug = Debug,                           -- your debug text/variable
                 DrawRotatedRectangle = DrawRotatedRectangle, -- your custom function
                 SortWalls = SortWalls,                   -- your function to sort walls
-                Walls = Walls,                           -- your walls table
+                Walls = Map.walls.list,                           -- your walls table
                 screen_width = love.graphics.getWidth(),
                 screen_height = love.graphics.getHeight(),
                 large_sreen_width = large_sreen_width,   -- your large screen width variable
@@ -397,14 +201,12 @@ function love.keypressed(key)
         love.mouse.setPosition(love.graphics.getWidth()/2, love.graphics.getHeight()/2)
     end
     if key == "escape" then
-        love.graphics.captureScreenshot(setbg)
         Game.InGame = not Game.InGame
+        love.mouse.setGrabbed(Game.InGame)
+        love.mouse.setVisible(not Game.InGame)
     end
 end
 
-function setbg(Image)
-    BackgroundImage = love.graphics.newImage(Image)
-end
 
 
 
