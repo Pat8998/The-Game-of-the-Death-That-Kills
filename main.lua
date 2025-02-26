@@ -11,6 +11,7 @@ local Button = require("buttons")
 local Draw = require("draw")
 local InGame = require("ingame")
 local Walls = require("walls")
+local Player = require("players")
 --local Draw = dofile("draw.lua")
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
 local fps
@@ -21,8 +22,15 @@ local Map = {walls = {list = {}}}
 local Entities = {}
 local Debug = "Debug"
 local Game = {
-    InGame = false,
+    InHostedGame = false,
+    InClientGame = false,
+    IsPaused = true
 }
+local Players = {
+    list = {},
+    number = 2
+}
+local LocalPlayer = Players.list[0]
 local BackgroundImage = love.graphics.newImage('ayakaka.png')
 local Buttons = {}
 
@@ -41,7 +49,7 @@ function love.load()
         myButton = Button:new(screen_width/2  -100, 200, 200, 50, "Click Me!"),
         StartGame = Button:new(screen_width/2 -100, 300, 200, 50, "Start game ❤!", function()
             print("Game Started !")
-            Game.InGame = true
+            Game.InHostedGame = true
         end),
         GenerateWalls = Button:new(screen_width/2 -100, 400, 200, 50, "Generate Walls", function()
             Walls:clear(Map.walls.list)   -- Clear the walls list
@@ -94,14 +102,12 @@ function love.load()
     end
 
     -- for players = palyers.number
-    player = { x = 90, y = 204, angle = -32*math.pi/180 , fov = math.pi/2, shape = love.physics.newCircleShape(2), mx = 0, my = 0, number = 1, InPauseMenu = false}
-    player.body = love.physics.newBody(world,player.x,player.y,"dynamic")
-    player.fixture = love.physics.newFixture(player.body, player.shape, 1)
-    player.fixture:setUserData("player")
-    player.fixture:setCategory(player.number)
-    player.fixture:setMask(player.number)
-    -- players [player.number] = player
-
+    for i = 1, Players.number do
+        table.insert(Players.list, Player.createPlayer(i, world))
+        -- Players.list[i]s [Players.list[i].number] = Players.list[i]
+    end
+    LocalPlayer = Players.list[1]
+    print(LocalPlayer)
 end
 
 
@@ -111,10 +117,14 @@ function love.update(dt)
     local dmouse = {x=love.mouse.getPosition()-mouse.x, y= love.mouse.getPosition()-mouse.y}
     mouse.x, mouse.y = love.mouse.getPosition()
     mouse.lb, mouse.rb, mouse.mb = love.mouse.isDown(1),love.mouse.isDown(2),love.mouse.isDown(3)
-    if Game.InGame then
-        InGame.update({
+    if Game.IsPaused then
+        UpdateMenu(dt)
+    end
+    if Game.InHostedGame then
+        InGame.updateHost({
             dt = dt,
-            player = player,                -- player table
+            players = Players,                -- player table
+            localplayer = LocalPlayer,
             dmouse = dmouse,                -- dmouse table (must contain dmouse.x)
             mouse = mouse,                  -- mouse table (must contain x, y, lb, etc.)
             world = world,                  -- physics world
@@ -124,8 +134,16 @@ function love.update(dt)
             DestroyEntity = DestroyEntity   -- function to destroy an entity
         
         })
+        --if caca= dz then
+            --send client info
+        --end
+    elseif Game.InClientGame then
+        -- get the info idk how
+        InGame.updateClient(
+
+        )
     else
-        UpdateMenu(dt)
+        Game.IsPaused = true
     end
 end
 
@@ -146,9 +164,9 @@ function love.draw()
     local screen_width = love.graphics.getWidth()
     local large_sreen_width = 2*math.pi*screen_width/player.fov
     local screen_height = love.graphics.getHeight()
-    if Game.InGame then
+    if Game.InHostedGame or Game.InClientGame then
         Draw.InGame({
-            player = player,                         -- your player table
+            player = LocalPlayer,                         -- your player table
             fps = fps,                               -- your current FPS value
             Debug = Debug,                           -- your debug text/variable
             DrawRotatedRectangle = DrawRotatedRectangle, -- your custom function
@@ -158,7 +176,8 @@ function love.draw()
             screen_height = love.graphics.getHeight(),
             large_sreen_width = large_sreen_width,   -- your large screen width variable
             WallsHeight = WallsHeight,               -- your WallsHeight variable
-            Entities = Entities                      -- your entities table
+            Entities = Entities,                      -- your entities table
+            Players = Players
    })
     else
         love.graphics.setCanvas(InGameCanvas)  -- Set the canvas as the target
@@ -176,7 +195,8 @@ function love.draw()
                 screen_height = love.graphics.getHeight(),
                 large_sreen_width = large_sreen_width,   -- your large screen width variable
                 WallsHeight = WallsHeight,               -- your WallsHeight variable
-                Entities = Entities                      -- your entities table
+                Entities = Entities,                      -- your entities table
+                Players = Players
            })
         end)
             -- Draw the blurred canvas to the screen
@@ -201,9 +221,9 @@ function love.keypressed(key)
         love.mouse.setPosition(love.graphics.getWidth()/2, love.graphics.getHeight()/2)
     end
     if key == "escape" then
-        Game.InGame = not Game.InGame
-        love.mouse.setGrabbed(Game.InGame)
-        love.mouse.setVisible(not Game.InGame)
+        Game.InHostedGame = not Game.InHostedGame
+        love.mouse.setGrabbed(Game.InHostedGame)
+        love.mouse.setVisible(not Game.InHostedGame)
     end
 end
 
@@ -306,6 +326,13 @@ function beginContact(a, b, coll)
         DestroyEntity(Entities.list[bullet:getBody()])
     end
 end
+
+
+function JoinGame(ipaddr)
+    
+    LocalPlayer = Players.list[key]
+end
+
 
 
 

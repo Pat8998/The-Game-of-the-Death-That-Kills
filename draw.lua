@@ -22,6 +22,7 @@ function Draw.InGame(params)
     local large_sreen_width = params.large_sreen_width
     local WallsHeight       = params.WallsHeight
     local Entities          = params.Entities
+    local Players           = params.Players
 
     -- Draw the player indicator and FPS/debug info
     love.graphics.setColor(255, 0, 0, 255)
@@ -107,7 +108,30 @@ function Draw.InGame(params)
         elseif screen_pos.x < -large_sreen_width + screen_width then
             screen_pos.x = screen_pos.x + large_sreen_width
         end
+        --if entity.body:geuserdata == ball
         love.graphics.circle("fill", screen_pos.x, screen_pos.y, math.min(100 / dist, 100), 500)
+    end
+    for key, otherplayer in pairs(Players.list) do
+        local x, y = otherplayer.body:getPosition()
+        love.graphics.points(x + 25, -y + 200)
+
+        local relative_pos = {
+            x = x - player.x,
+            y = y - player.y
+        }
+        ---@diagnostic disable-next-line: deprecated
+        local angle = math.atan2(relative_pos.y, relative_pos.x) - player.angle + player.fov / 2
+        local dist = math.sqrt(relative_pos.x^2 + relative_pos.y^2)
+        local screen_pos = {
+            x = screen_width - (angle) * screen_width / player.fov,
+            y = 500 * math.exp(-dist) + screen_height / 2
+        }
+        if screen_pos.x > large_sreen_width then
+            screen_pos.x = screen_pos.x - large_sreen_width
+        elseif screen_pos.x < -large_sreen_width + screen_width then
+            screen_pos.x = screen_pos.x + large_sreen_width
+        end
+        love.graphics.rectangle("fill", screen_pos.x, screen_pos.y, 0.1 * screen_width / (dist), 0.3 * screen_height / dist)
     end
 end
 
