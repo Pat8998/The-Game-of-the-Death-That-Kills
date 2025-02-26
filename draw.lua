@@ -14,8 +14,6 @@ function Draw.InGame(params)
     local player            = params.player
     local fps               = params.fps
     local Debug             = params.Debug
-    local DrawRotatedRectangle = params.DrawRotatedRectangle
-    local SortWalls         = params.SortWalls
     local Walls             = params.Walls
     local screen_width      = params.screen_width
     local screen_height     = params.screen_height
@@ -36,7 +34,7 @@ function Draw.InGame(params)
 
     -- Draw walls
     love.graphics.setColor(255, 255, 255, 255)
-    local sortedWalls = SortWalls(Walls)
+    local sortedWalls = SortWalls(Walls, player)
     for key, value in pairs(sortedWalls) do
         local relative_pos = {
             s = { x = value.pos[1][1] - player.x, y = value.pos[1][2] - player.y },
@@ -69,8 +67,8 @@ function Draw.InGame(params)
             screen_pos.s, screen_pos.e = screen_pos.s + large_sreen_width, screen_pos.e + large_sreen_width
         end
         local height = {
-            s = WallsHeight * screen_height / dist.s,
-            e = WallsHeight * screen_height / dist.e
+            s = player.ScaleFactor * WallsHeight * screen_height / dist.s,
+            e = player.ScaleFactor * WallsHeight * screen_height / dist.e
         }
         local vertices = {
             screen_pos.s, screen_height / 2 + height.s,
@@ -111,6 +109,7 @@ function Draw.InGame(params)
         --if entity.body:geuserdata == ball
         love.graphics.circle("fill", screen_pos.x, screen_pos.y, math.min(100 / dist, 100), 500)
     end
+    love.graphics.setColor(0.001, 1, 0.001)
     for key, otherplayer in pairs(Players.list) do
         local x, y = otherplayer.body:getPosition()
         love.graphics.points(x + 25, -y + 200)
@@ -131,10 +130,61 @@ function Draw.InGame(params)
         elseif screen_pos.x < -large_sreen_width + screen_width then
             screen_pos.x = screen_pos.x + large_sreen_width
         end
-        love.graphics.rectangle("fill", screen_pos.x, screen_pos.y, 0.1 * screen_width / (dist), 0.3 * screen_height / dist)
+        love.graphics.rectangle("fill", screen_pos.x, screen_pos.y, 0.4 * screen_width / (dist), 0.8 * screen_height / dist)
     end
 end
 
+
+function SortWalls(walls, player)
+    -- table.sort(walls, function(a, b)
+    -- local dist_a = {
+    --     s = math.sqrt((a[1][1] - player.x)^2 + (a[1][2] - player.y)^2),
+    --     e = math.sqrt((a[2][1] - player.x)^2 + (a[2][2] - player.y)^2)
+    -- }
+    -- local dist_b = {
+    --     s = math.sqrt((b[1][1] - player.x)^2 + (b[1][2] - player.y)^2),
+    --     e = math.sqrt((b[2][1] - player.x)^2 + (b[2][2] - player.y)^2)
+    -- }
+    -- local min_dist_a = math.min(dist_a.s, dist_a.e)
+    -- local min_dist_b = math.min(dist_b.s, dist_b.e)
+
+    -- return min_dist_a > min_dist_b
+    -- end)
+
+
+    --Sorting the walls
+    table.sort(walls, function(a, b)
+        -- Calculate the midpoint of wall 'a'
+        local mid_a_x = (a.pos[1][1] + a.pos[2][1]) / 2
+        local mid_a_y = (a.pos[1][2] + a.pos[2][2]) / 2
+
+        -- Calculate the distance from player to the midpoint of wall 'a'
+        local dist_a = math.sqrt((mid_a_x - player.x)^2 + (mid_a_y - player.y)^2)
+
+        -- Calculate the midpoint of wall 'b'
+        local mid_b_x = (b.pos[1][1] + b.pos[2][1]) / 2
+        local mid_b_y = (b.pos[1][2] + b.pos[2][2]) / 2
+
+        -- Calculate the distance from player to the midpoint of wall 'b'
+        local dist_b = math.sqrt((mid_b_x - player.x)^2 + (mid_b_y - player.y)^2)
+
+        -- Compare the distances
+        return dist_a > dist_b
+    end)
+
+    return walls
+end
+--function used just for the minimap lol
+function DrawRotatedRectangle(mode, x, y, width, height, angle)
+	-- We cannot rotate the rectangle directly, but we
+	-- can move and rotate the coordinate system.
+	love.graphics.push()
+	love.graphics.translate(x, y)
+	love.graphics.rotate(-angle)
+	love.graphics.rectangle(mode, 0, 0, width, height) -- origin in the top left corner
+--	love.graphics.rectangle(mode, -width/2, -height/2, width, height) -- origin in the middle
+	love.graphics.pop()
+end
 
 
 return Draw

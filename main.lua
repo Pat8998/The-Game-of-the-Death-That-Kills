@@ -128,7 +128,6 @@ function love.update(dt)
             dmouse = dmouse,                -- dmouse table (must contain dmouse.x)
             mouse = mouse,                  -- mouse table (must contain x, y, lb, etc.)
             world = world,                  -- physics world
-            WallsHeight = WallsHeight,      -- WallsHeight variable
             Shoot = Shoot,                  -- Shoot function
             Entities = Entities,            -- Entities table with Entities.list
             DestroyEntity = DestroyEntity   -- function to destroy an entity
@@ -162,15 +161,13 @@ end
 
 function love.draw()
     local screen_width = love.graphics.getWidth()
-    local large_sreen_width = 2*math.pi*screen_width/player.fov
+    local large_sreen_width = 2*math.pi*screen_width/LocalPlayer.fov
     local screen_height = love.graphics.getHeight()
     if Game.InHostedGame or Game.InClientGame then
         Draw.InGame({
             player = LocalPlayer,                         -- your player table
             fps = fps,                               -- your current FPS value
             Debug = Debug,                           -- your debug text/variable
-            DrawRotatedRectangle = DrawRotatedRectangle, -- your custom function
-            SortWalls = SortWalls,                   -- your function to sort walls
             Walls = Map.walls.list,                           -- your walls table
             screen_width = love.graphics.getWidth(),
             screen_height = love.graphics.getHeight(),
@@ -185,11 +182,9 @@ function love.draw()
         love.graphics.setCanvas()            -- Reset to the default screen
         InGameCanvas:renderTo(function ()
             Draw.InGame({
-                player = player,                         -- your player table
+                player = LocalPlayer,                         -- your player table
                 fps = fps,                               -- your current FPS value
                 Debug = Debug,                           -- your debug text/variable
-                DrawRotatedRectangle = DrawRotatedRectangle, -- your custom function
-                SortWalls = SortWalls,                   -- your function to sort walls
                 Walls = Map.walls.list,                           -- your walls table
                 screen_width = love.graphics.getWidth(),
                 screen_height = love.graphics.getHeight(),
@@ -231,53 +226,8 @@ end
 
 
 
-function DrawRotatedRectangle(mode, x, y, width, height, angle)
-	-- We cannot rotate the rectangle directly, but we
-	-- can move and rotate the coordinate system.
-	love.graphics.push()
-	love.graphics.translate(x, y)
-	love.graphics.rotate(-angle)
-	love.graphics.rectangle(mode, 0, 0, width, height) -- origin in the top left corner
---	love.graphics.rectangle(mode, -width/2, -height/2, width, height) -- origin in the middle
-	love.graphics.pop()
-end
 
-function SortWalls(walls)
-    -- table.sort(walls, function(a, b)
-    -- local dist_a = {
-    --     s = math.sqrt((a[1][1] - player.x)^2 + (a[1][2] - player.y)^2),
-    --     e = math.sqrt((a[2][1] - player.x)^2 + (a[2][2] - player.y)^2)
-    -- }
-    -- local dist_b = {
-    --     s = math.sqrt((b[1][1] - player.x)^2 + (b[1][2] - player.y)^2),
-    --     e = math.sqrt((b[2][1] - player.x)^2 + (b[2][2] - player.y)^2)
-    -- }
-    -- local min_dist_a = math.min(dist_a.s, dist_a.e)
-    -- local min_dist_b = math.min(dist_b.s, dist_b.e)
 
-    -- return min_dist_a > min_dist_b
-    -- end)
-    -- Sorting the walls
-    table.sort(walls, function(a, b)
-        -- Calculate the midpoint of wall 'a'
-        local mid_a_x = (a.pos[1][1] + a.pos[2][1]) / 2
-        local mid_a_y = (a.pos[1][2] + a.pos[2][2]) / 2
-
-        -- Calculate the distance from player to the midpoint of wall 'a'
-        local dist_a = math.sqrt((mid_a_x - player.x)^2 + (mid_a_y - player.y)^2)
-
-        -- Calculate the midpoint of wall 'b'
-        local mid_b_x = (b.pos[1][1] + b.pos[2][1]) / 2
-        local mid_b_y = (b.pos[1][2] + b.pos[2][2]) / 2
-
-        -- Calculate the distance from player to the midpoint of wall 'b'
-        local dist_b = math.sqrt((mid_b_x - player.x)^2 + (mid_b_y - player.y)^2)
-
-        -- Compare the distances
-        return dist_a > dist_b
-    end)
-    return walls
-end
 
 
 
