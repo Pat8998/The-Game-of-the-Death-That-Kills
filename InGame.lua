@@ -8,7 +8,6 @@ function InGame.updateHost(params)
     local dmouse = params.dmouse
     local mouse = params.mouse
     local world = params.world
-    local WallsHeight = params.WallsHeight
     local Shoot = params.Shoot
     local Entities = params.Entities
     local DestroyEntity = params.DestroyEntity
@@ -61,10 +60,10 @@ function InGame.updateHost(params)
 
     if love.mouse.isDown(2) then
         player.fov = math.max(math.pi / 3, player.fov - math.pi / 6 * dt * 4)
-        WallsHeight = math.min(3, WallsHeight + dt * 4)
+        player.ScaleFactor = math.min(3, player.ScaleFactor + dt * 4)
     else
         player.fov = math.min(math.pi / 2, player.fov + math.pi / 6 * dt * 4)
-        WallsHeight = math.max(2, WallsHeight - dt * 4)
+        player.ScaleFactor = math.max(2, player.ScaleFactor - dt * 4)
     end
 
     if mouse.lb then
