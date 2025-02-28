@@ -93,7 +93,7 @@ function InGame.updateHost(params)
     for key, entity in pairs(Entities.list) do
         if entity.fixture:getUserData() == "bullet" then
             entity.life = entity.life - dt
-            print(entity.life)
+            --print(entity.life)
             if entity.life <= 0 then
                 DestroyEntity(entity)
             end
@@ -101,6 +101,19 @@ function InGame.updateHost(params)
     end
 end
 
+function InGame.UpdateWhileLoading(channel, Game)
+    local message = channel:pop()
+        if message then
+            if message == "Connected" then
+                print("Connected to host!")
+                Game.IsConnectedToHost = true
+            elseif message == "Loaded" then
+                print("Loaded!")
+                Game.IsLoading = false
+                Game.InClientGame = true
+            end
+        end
+end
 
 
 function InGame.updateClient(params)
