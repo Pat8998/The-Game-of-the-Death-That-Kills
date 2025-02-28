@@ -28,6 +28,7 @@ local Game = {
     InClientGame = false,
     IsPaused = true,
     IsLoading = false,
+    IsPublic = false,
     IsConnectedToHost = false,
     InMM = false --For now pause menu is main menu but it'll change
 }
@@ -51,7 +52,9 @@ function love.load()
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
     local screen_width, screen_height = love.graphics.getWidth(), love.graphics.getHeight()
     Buttons = {
-        myButton = Button:new(screen_width/2  -100, 200, 200, 50, "Click Me!"),
+        Quit = Button:new(screen_width/2 -100, 200, 200, 50, "Quit", function()
+            love.event.quit()
+        end),
         StartGame = Button:new(screen_width/2 -100, 300, 200, 50, "Start game ❤!", function()
             print("Game Started !")
             Game.InHostedGame = true
@@ -65,9 +68,19 @@ function love.load()
         Game.IsLoading = true
         end),
         SetPublic =  Button:new(screen_width/2 -100, 600, 200, 50, "SetPublic", function ()
-            SetPublic()
-        end)
+            love.thread.newThread(string.dump(Multiplayer.StartServer)):start()
+            Buttons.SetPublic.isActive = false
+            Buttons.StopServer.isActive = true
+            Game.IsPublic = true
+        end),
+        StopServer = Button:new(screen_width/2 -100, 700, 200, 50, "StopServer", function ()
+            love.thread.getChannel("MultplayerThread"):push("StopServer")
+            Buttons.SetPublic.isActive = true
+            Buttons.StopServer.isActive = false
+            Game.IsPublic = false
+        end, {isActive = false})
     }
+    -- Buttons.StopServer.isActive = false
     InGameCanvas = love.graphics.newCanvas(love.graphics.getWidth(), love.graphics.getHeight())
     blurShader = love.graphics.newShader[[
         extern number blurSize;
@@ -316,10 +329,7 @@ end
 -- end
 
 
-function SetPublic()
-    local host = enet.host_create("localhost:6789")
-    --setup a thread which does things right when somebody tries to connect
-end
+
 
 
 

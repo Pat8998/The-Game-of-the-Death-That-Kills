@@ -1,11 +1,12 @@
 local Multiplayer = {}
+Multiplayer.ThreadChannel = nil
+Multiplayer.Host = nil
 
 function Multiplayer.Thread(ipaddr, Game)
     local enet = require("enet")
     print("Connecting to", ipaddr)
-    local host = enet.host_create(ipaddr)
-    Multiplayer.ThreadChannel = love.thread.getChannel("MultplayerThread") --this is the channel that the thread will use to communicate with the main thread
-    
+    local host = enet.host_create()
+    Channel = love.thread.getChannel("MultplayerThread") --this is the channel that the thread will use to communicate with the main thread
     local server = host:connect(ipaddr)
     while not Game.IsConnectedToHost do
         local event = host:service(1000)
@@ -14,7 +15,9 @@ function Multiplayer.Thread(ipaddr, Game)
             if event.type == "connect" then
                 print("Successfully connected to", ipaddr)
                 Game.IsConnectedToHost = true
-                Multiplayer.ThreadChannel:push("Connected")
+                Channel:push("Connected")
+            else
+                print (event.type, event.peer, event.data)
             end
         end
     end
@@ -25,13 +28,28 @@ function Multiplayer.Thread(ipaddr, Game)
                 print("Received message", event.data)
                 -- LocalPlayer.number = event.data --actually might be sent every frame? ACTUALLY NO BC I SEND TO ALL PEERS
                 Game.IsLoading = false
-                Multiplayer.ThreadChannel:push("Loaded")
+                Channel:push("Loaded")
             end
         end
     end
     --Handle communications?
 end
 
-Multiplayer.ThreadChannel = nil
+
+
+function Multiplayer.StartServer()
+    local enet = require("enet")
+    if not Host then
+        Host = enet.host_create("localhost:6789")
+        print("host created")
+    end
+    --setup a thread which does things right when somebody tries to connect ?
+    while Game.InHostedGame and  do
+        
+    end
+end
+
+
+
 
 return Multiplayer
