@@ -12,7 +12,8 @@ local Draw = require("draw")
 local InGame = require("ingame")
 local Walls = require("walls")
 local Player = require("players")
---local Draw = dofile("draw.lua")
+local enet = require "enet"  --put it in global to call it from libraries ???
+local Clients = {}          -- useless ??
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
 local fps
 local WallsHeight = 2
@@ -24,7 +25,10 @@ local Debug = "Debug"
 local Game = {
     InHostedGame = false,
     InClientGame = false,
-    IsPaused = true
+    IsPaused = true,
+    Isloading = false,
+    IsConnectedToHost = false,
+    InMM = false --For now pause menu is main menu but it'll change
 }
 local Players = {
     list = {},
@@ -45,18 +49,26 @@ function love.load()
     love.window.setMode(1920, 1080, {fullscreen = false})
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
     local screen_width, screen_height = love.graphics.getWidth(), love.graphics.getHeight()
+    print("hey")
     Buttons = {
         myButton = Button:new(screen_width/2  -100, 200, 200, 50, "Click Me!"),
         StartGame = Button:new(screen_width/2 -100, 300, 200, 50, "Start game ❤!", function()
             print("Game Started !")
             Game.InHostedGame = true
+            Game.IsPaused = false
         end),
         GenerateWalls = Button:new(screen_width/2 -100, 400, 200, 50, "Generate Walls", function()
             Walls:clear(Map.walls.list)   -- Clear the walls list
             Map.walls.list = Walls:generate(20)
+        end),
+        JoinGame = Button:new(screen_width/2 -100, 500, 200, 50, "Join Game", function ()
+            JoinGame()
+        end),
+        SetPublic =  Button:new(screen_width/2 -100, 600, 200, 50, "SetPublic", function ()
+            SetPublic()
         end)
-
     }
+    print("hey*2")
     InGameCanvas = love.graphics.newCanvas(love.graphics.getWidth(), love.graphics.getHeight())    
     blurShader = love.graphics.newShader[[
         extern number blurSize;
@@ -118,7 +130,10 @@ function love.update(dt)
     mouse.x, mouse.y = love.mouse.getPosition()
     mouse.lb, mouse.rb, mouse.mb = love.mouse.isDown(1),love.mouse.isDown(2),love.mouse.isDown(3)
     if Game.IsPaused then
+        Game.InHostedGame = false
         UpdateMenu(dt)
+    elseif not Game.InClientGame and not Game.InMM then
+        Game.InHostedGame = true
     end
     if Game.InHostedGame then
         InGame.updateHost({
@@ -144,6 +159,7 @@ function love.update(dt)
     else
         Game.IsPaused = true
     end
+    Debug = "Game is paused : " .. tostring(Game.IsPaused)
 end
 
 
@@ -176,6 +192,8 @@ function love.draw()
             Entities = Entities,                      -- your entities table
             Players = Players
    })
+    elseif Game.Isloading then
+        Draw.LoadingScreen()
     else
         love.graphics.setCanvas(InGameCanvas)  -- Set the canvas as the target
         love.graphics.clear(0, 0, 0, 0)    -- Clear it (transparent)
@@ -216,9 +234,9 @@ function love.keypressed(key)
         love.mouse.setPosition(love.graphics.getWidth()/2, love.graphics.getHeight()/2)
     end
     if key == "escape" then
-        Game.InHostedGame = not Game.InHostedGame
-        love.mouse.setGrabbed(Game.InHostedGame)
-        love.mouse.setVisible(not Game.InHostedGame)
+        Game.IsPaused = not Game.IsPaused
+        love.mouse.setGrabbed(not Game.IsPaused)
+        love.mouse.setVisible(Game.IsPaused)
     end
 end
 
@@ -228,7 +246,13 @@ end
 
 
 
+function love.filedropped(file )
+    local content = file:read() -- Read the entire contents of the file
 
+    -- Parse the contents of the file as needed
+    -- For example, print the contents to the console
+    print(content)
+end
 
 
 function Shoot(dt, player, speed, Bullet_type)
@@ -278,10 +302,57 @@ function beginContact(a, b, coll)
 end
 
 
-function JoinGame(ipaddr)
-    
-    LocalPlayer = Players.list[key]
+function JoinGame() --actually have to thread it
+    Game.IsLoading = true
+    local ipaddr = nil
+    while not ipaddr do
+        local name, file = love.event.wait()
+        if name == "filedropped" then
+            ipaddr = file:read() -- Read the entire contents of the file
+            print("got file")
+        end
+    end
+    local host = enet.host_create()
+    local server = host:connect(ipaddr)
+    while not Game.IsConnectedToHost do
+        local event = host:service(1000)
+        if event then
+            print("got event")
+            if event.type == "connect" then
+                print("Successfully connected to", ipaddr)
+                Game.IsConnectedToHost = true
+            end
+        end
+    end
+    while Game.IsLoading do
+        local event = host:service(100)
+        if event then
+            if event.type == "receive" then
+                print("Received message", event.data)
+                -- LocalPlayer.number = event.data --actually might be sent every frame? ACTUALLY NO BC I SEND TO ALL PEERS
+                Game.IsLoading = false
+            end
+        end
+    end
+    --LocalPlayer = Players.list[key]
 end
+
+
+function SetPublic()
+    local host = enet.host_create("localhost:6789")
+    --setup a thread which does things right when somebody tries to connect
+end
+
+
+
+
+
+
+
+
+
+
+
 
 
 
