@@ -193,7 +193,7 @@ function love.draw()
             Entities = Entities,                      -- your entities table
             Players = Players
    })
-    elseif Game.Isloading then
+    elseif Game.IsLoading then
         Draw.LoadingScreen()
     else    --MM for now I guess
         love.graphics.setCanvas(InGameCanvas)  -- Set the canvas as the target
@@ -252,8 +252,7 @@ function love.filedropped(file )
     if Game.IsLoading then
             local ThreadScrpit = string.dump(Multiplayer.Thread)
             local MultplayerThread = love.thread.newThread(ThreadScrpit)
-            local host = enet.host_create()
-            MultplayerThread:start(content, host, Game)
+            MultplayerThread:start(content, Game)
             Multiplayer.ThreadChannel = love.thread.getChannel("MultplayerThread")
     end
     -- Parse the contents of the file as needed

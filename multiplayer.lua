@@ -1,7 +1,9 @@
 local Multiplayer = {}
 
-function Multiplayer.Thread(ipaddr, host, Game)
+function Multiplayer.Thread(ipaddr, Game)
+    local enet = require("enet")
     print("Connecting to", ipaddr)
+    local host = enet.host_create(ipaddr)
     Multiplayer.ThreadChannel = love.thread.getChannel("MultplayerThread") --this is the channel that the thread will use to communicate with the main thread
     
     local server = host:connect(ipaddr)
