@@ -5,7 +5,7 @@
 
 --BIG PROBLEM : HOW TO KNOW WETHER YOU DRAW WALLS OR ENTITIES ?
 -- CREATE A TO DRAW TABLE SORTED? WiTH AN IF THAT GETS THE BODY TYPE
-
+--enet channel 2 for connect
 
 local Button = require("buttons")
 local Draw = require("draw")
@@ -14,7 +14,6 @@ local Walls = require("walls")
 local Player = require("players")
 local Multiplayer = require("multiplayer")
 local enet = require "enet"  --put it in global to call it from libraries ???
-local Clients = {}          -- useless ??
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
 local fps
 local WallsHeight = 2
@@ -31,6 +30,8 @@ local Game = {
     IsPublic = false,
     IsConnectedToHost = false,
     InMM = false, --For now pause menu is main menu but it'll change
+    Server = nil,        --might have to move it somewhere else because Cannot send it th threads
+    Clients = {},
 }
 local Players = {
     list = {},
@@ -74,13 +75,18 @@ function love.load()
         end),
         SetPublic =  Button:new(screen_width/2 -100, 600, 200, 50, "SetPublic", function ()
             Game.IsPublic = true
-            love.thread.newThread(string.dump(Multiplayer.StartServer)):start(Game)
+            -- love.thread.newThread(string.dump(Multiplayer.StartServer)):start(Game)
+            --ABOVE LINE IF ANY LAG IS CAUSED WITHOUT THE THREAD
+            Game.Server = Multiplayer.StartServer("localhost:6789")
             Buttons.SetPublic.isActive = false
             Buttons.StopServer.isActive = true
         end),
         StopServer = Button:new(screen_width/2 -100, 700, 200, 50, "StopServer", function ()
             Game.IsPublic = false
-            love.thread.getChannel("MultplayerThread"):push(Game)
+            -- love.thread.getChannel("MultplayerThread"):push(Game)
+            --ABOVE LINES IF ANY LAG IS CAUSED WITHOUT THE THREAD
+            Game.Server = Game.Server:destroy()
+            print("Server stopped")
             Buttons.SetPublic.isActive = true
             Buttons.StopServer.isActive = false
         end, {isActive = false})
@@ -138,9 +144,9 @@ function love.load()
     LocalPlayer = Players.list[1]
 
     
-    Channels.InputCommuncicationChannel = love.thread.getChannel("InputServerThread")
-    Channels.OutputCommuncicationChannel = love.thread.getChannel("OutputServerThread")
-    Channels.GameChannel = love.thread.getChannel("GameServerThread")
+    -- Channels.InputCommuncicationChannel = love.thread.getChannel("InputServerThread")
+    -- Channels.OutputCommuncicationChannel = love.thread.getChannel("OutputServerThread")
+    -- Channels.GameChannel = love.thread.getChannel("GameServerThread")
 end
 
 
@@ -177,7 +183,7 @@ function love.update(dt)
             Channels = Channels,
             Player = Player
         })
-    Channels.GameChannel:push(Game)
+    -- Channels.GameChannel:push(Game)     -- USELESS
         --if caca= dz then
             --send client info
         --end

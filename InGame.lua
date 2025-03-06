@@ -87,9 +87,8 @@ function InGame.updateHost(params)
 
     --update othe players
     if Game.IsPublic then
-        Multiplayer.ServerReceive(players, Channels, Player, players)
+        Multiplayer.ServerReceive(players, Channels, Player, Game)
     end
-
 
 
     world:update(dt)
@@ -108,7 +107,8 @@ function InGame.updateHost(params)
         Multiplayer.ServerSend(
             players,
             player,
-            Entities
+            Entities,
+            Game
         )
     end
 end
