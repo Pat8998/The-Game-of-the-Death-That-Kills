@@ -30,11 +30,16 @@ local Game = {
     IsLoading = false,
     IsPublic = false,
     IsConnectedToHost = false,
-    InMM = false --For now pause menu is main menu but it'll change
+    InMM = false, --For now pause menu is main menu but it'll change
 }
 local Players = {
     list = {},
     number = 2
+}
+local Channels = {
+    InputCommuncicationChannel = nil,
+    OutputCommuncicationChannel = nil,
+    GameChannel = nil
 }
 local LocalPlayer = Players.list[0]
 local BackgroundImage = love.graphics.newImage('ayakaka.png')
@@ -68,16 +73,16 @@ function love.load()
         Game.IsLoading = true
         end),
         SetPublic =  Button:new(screen_width/2 -100, 600, 200, 50, "SetPublic", function ()
-            love.thread.newThread(string.dump(Multiplayer.StartServer)):start()
+            Game.IsPublic = true
+            love.thread.newThread(string.dump(Multiplayer.StartServer)):start(Game)
             Buttons.SetPublic.isActive = false
             Buttons.StopServer.isActive = true
-            Game.IsPublic = true
         end),
         StopServer = Button:new(screen_width/2 -100, 700, 200, 50, "StopServer", function ()
-            love.thread.getChannel("MultplayerThread"):push("StopServer")
+            Game.IsPublic = false
+            love.thread.getChannel("MultplayerThread"):push(Game)
             Buttons.SetPublic.isActive = true
             Buttons.StopServer.isActive = false
-            Game.IsPublic = false
         end, {isActive = false})
     }
     -- Buttons.StopServer.isActive = false
@@ -131,6 +136,11 @@ function love.load()
         -- Players.list[i]s [Players.list[i].number] = Players.list[i]
     end
     LocalPlayer = Players.list[1]
+
+    
+    Channels.InputCommuncicationChannel = love.thread.getChannel("InputServerThread")
+    Channels.OutputCommuncicationChannel = love.thread.getChannel("OutputServerThread")
+    Channels.GameChannel = love.thread.getChannel("GameServerThread")
 end
 
 
@@ -161,17 +171,20 @@ function love.update(dt)
             world = world,                  -- physics world
             Shoot = Shoot,                  -- Shoot function
             Entities = Entities,            -- Entities table with Entities.list
-            DestroyEntity = DestroyEntity   -- function to destroy an entity
-
+            DestroyEntity = DestroyEntity,   -- function to destroy an entity
+            Multiplayer = Multiplayer,
+            Game = Game,
+            Channels = Channels,
+            Player = Player
         })
+    Channels.GameChannel:push(Game)
         --if caca= dz then
             --send client info
         --end
     elseif Game.InClientGame then
         -- get the info idk how
-        InGame.updateClient(
-
-        )
+        -- InGame.updateClient()
+        
     else
         Game.IsPaused = true
     end

@@ -11,6 +11,10 @@ function InGame.updateHost(params)
     local Shoot = params.Shoot
     local Entities = params.Entities
     local DestroyEntity = params.DestroyEntity
+    local Multiplayer = require("Multiplayer")
+    local Game = params.Game
+    local Channels = params.Channels
+    local Player = params.Player
 
     -- Update mouse and player angle
     if not love.keyboard.isDown("lalt") and love.window.hasFocus() then
@@ -82,8 +86,9 @@ function InGame.updateHost(params)
 
 
     --update othe players
-
-
+    if Game.IsPublic then
+        Multiplayer.ServerReceive(players, Channels, Player, players)
+    end
 
 
 
@@ -98,6 +103,13 @@ function InGame.updateHost(params)
                 DestroyEntity(entity)
             end
         end
+    end
+    if Game.IsPublic then
+        Multiplayer.ServerSend(
+            players,
+            player,
+            Entities
+        )
     end
 end
 
