@@ -29,7 +29,7 @@ function Multiplayer.Thread(ipaddr, Game)
         local event = host:service(100)
         if event then
             if event.type == "receive" then
-                if event.channel == 2 then
+                if event.channel == Game.enetChannels.NumberChannel then
                     print("We are player number", event.data)
                     -- LocalPlayer.number = event.data --actually might be sent every frame? ACTUALLY NO BC I SEND TO ALL PEERS
                     Game.IsLoading, Game.InClientGame = false, true
@@ -66,14 +66,37 @@ end
 
 
 
-function Multiplayer.ServerSend (players, player, Entities, Game)
+function Multiplayer.ServerSend (Game, players, Entities, Walls)     --additionnaly send player number on the rght channel if there's bad things happening
+    local data = {}
+    for _, Entity in ipairs(Entities) do
+        table.insert(data, {
+            type = "Bullet",
+            x = Entity.body:getPosition(),
+            y = Entity.body:getPosition()[2]
+        })
+    end
+    for _, p in ipairs(players) do
+        table.insert(data, {
+            type = "Player",
+            x = p.body:getPosition(),
+            y = p.body:getPosition()[2]
+        })
+    end
+    Game.Server:broadcast(json.encode(data), Game.enetChannels.EntityChannel)
+    data = {}
+    for _, Wall in ipairs(Walls) do
+        table.insert(data, {
+            pos = Wall.pos
+        })
+    end
+    Game.Server:broadcast(json.encode(data), Game.enetChannels.WallsChannel)
     -- Game.Server:broadcast(json.encode({
     --     type = "update",
     --     player = player,
     --     players = players,
     --     Entities = Entities
     -- }))
-    --Game.Server:flush()
+    Game.Server:flush()
 end
 
 
@@ -95,7 +118,7 @@ function Multiplayer.ServerReceive (players, Channels, Player, Game)
             print("A client connected from", event.peer)
             players.list[#players.list + 1] = Player.createPlayer(#players.list + 1, world)
             print("Sending player number", players.list[#players.list].number)
-            event.peer:send(players.list[#players.list].number, 2)
+            event.peer:send(players.list[#players.list].number, Game.enetChannels.NumberChannel)
             Game.Clients[#Game.Clients + 1] = event.peer
         else
             print(event.type, event.peer, event.data)

@@ -21,7 +21,6 @@ local test = "nil"
 local data = {}
 local Map = {walls = {list = {}}}
 local Entities = {}
-local Debug = "Debug"
 local Game = {
     InHostedGame = false,
     InClientGame = false,
@@ -32,6 +31,12 @@ local Game = {
     InMM = false, --For now pause menu is main menu but it'll change
     Server = nil,        --might have to move it somewhere else because Cannot send it th threads
     Clients = {},
+    Debug = "debug",
+    enetChannels = {
+        NumberChannel = 0,
+        EntityChannel = 1,
+        WallsChannel = 2,
+    }
 }
 local Players = {
     list = {},
@@ -181,7 +186,8 @@ function love.update(dt)
             Multiplayer = Multiplayer,
             Game = Game,
             Channels = Channels,
-            Player = Player
+            Player = Player,
+            Map = Map
         })
     -- Channels.GameChannel:push(Game)     -- USELESS
         --if caca= dz then
@@ -194,7 +200,7 @@ function love.update(dt)
     else
         Game.IsPaused = true
     end
-    Debug = "Game is loading : " .. tostring(Game.IsLoading)
+    Game.debug = "Debug :" .. tostring(Game.Debug)
 end
 
 
@@ -216,7 +222,7 @@ function love.draw()
         Draw.InGame({
             player = LocalPlayer,                         -- your player table
             fps = fps,                               -- your current FPS value
-            Debug = Debug,                           -- your debug text/variable
+            Game = Game,                           -- your debug text/variable
             Walls = Map.walls.list,                           -- your walls table
             screen_width = love.graphics.getWidth(),
             screen_height = love.graphics.getHeight(),
@@ -235,7 +241,7 @@ function love.draw()
             Draw.InGame({
                 player = LocalPlayer,                         -- your player table
                 fps = fps,                               -- your current FPS value
-                Debug = Debug,                           -- your debug text/variable
+                Game = Game,                           -- your debug text/variable
                 Walls = Map.walls.list,                           -- your walls table
                 screen_width = love.graphics.getWidth(),
                 screen_height = love.graphics.getHeight(),

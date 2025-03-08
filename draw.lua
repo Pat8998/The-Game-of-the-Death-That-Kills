@@ -19,7 +19,7 @@ function Draw.InGame(params)
     -- Extract variables from the passed table
     local player            = params.player
     local fps               = params.fps
-    local Debug             = params.Debug
+    local Game             = params.Game
     local Walls             = params.Walls
     local screen_width      = params.screen_width
     local screen_height     = params.screen_height
@@ -36,7 +36,7 @@ function Draw.InGame(params)
     love.graphics.print("x: " .. tostring(player.x), 0, 20)
     love.graphics.print("y: " .. tostring(player.y), 0, 40)
     love.graphics.print("angle: " .. tostring(player.angle * 180 / math.pi), 0, 60)
-    love.graphics.print(Debug, 0, 80)
+    love.graphics.print(Game.Debug, 0, 80)
 
     -- Draw walls
     love.graphics.setColor(255, 255, 255, 255)

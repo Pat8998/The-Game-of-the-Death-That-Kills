@@ -15,6 +15,7 @@ function InGame.updateHost(params)
     local Game = params.Game
     local Channels = params.Channels
     local Player = params.Player
+    local Map = params.Map
 
     -- Update mouse and player angle
     if not love.keyboard.isDown("lalt") and love.window.hasFocus() then
@@ -105,10 +106,10 @@ function InGame.updateHost(params)
     end
     if Game.IsPublic then
         Multiplayer.ServerSend(
+            Game,
             players,
-            player,
             Entities,
-            Game
+            Map.walls.list
         )
     end
 end
