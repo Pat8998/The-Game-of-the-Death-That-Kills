@@ -36,7 +36,7 @@ local Game = {
         NumberChannel = 0,
         EntityChannel = 1,
         WallsChannel = 2,
-    }
+    }       -- If I ever add another channel (for chat or smth) I have to up the number of channels in the connect (multiplayer.lua line 13)
 }
 local Players = {
     list = {},
@@ -312,7 +312,6 @@ function Shoot(dt, player, speed, Bullet_type)
 end
 
 function DestroyEntity(entity)
-    print(entity)
     if entity ~= nil then
         local body = entity.body
         Entities.list[body].body:destroy()  -- Destroy the body
@@ -327,6 +326,7 @@ function beginContact(a, b, coll)
     local userdataA = a:getUserData()
     local userdataB = b:getUserData()
 
+    local bullet, other
     -- If one object is "deletable" and the other is not a "player"
     if userdataA == "bullet" or userdataB == "bullet" then
         if userdataA == "bullet" then
