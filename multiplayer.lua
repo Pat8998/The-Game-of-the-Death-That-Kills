@@ -10,7 +10,7 @@ function Multiplayer.Thread(ipaddr, Game)
     print("Connecting to", ipaddr)
     local host = enet.host_create()
     GameChannel = love.thread.getChannel("MultplayerThread") --this is the channel that the thread will use to communicate with the main thread
-    host:channel_limit(3)
+    -- host:channel_limit(3)
     local server = host:connect(ipaddr, 3)  --3 is the number of channels. add more if needed
     -- Channel:push(server)
     while not Game.IsConnectedToHost do
@@ -44,7 +44,7 @@ function Multiplayer.Thread(ipaddr, Game)
     print("Game started")
     --Handle communications?
     while Game.InClientGame do
-        local event = host:check_events()
+        local event = host:service()
         if event then
             if event.type == "receive" then
                 print("Got message: ", event.data, "from", event.peer, "on channel", event.channel)
@@ -55,6 +55,8 @@ function Multiplayer.Thread(ipaddr, Game)
         -- else
         --     print("No event")
         end
+        -- server:send("hi", 0)
+        -- host:flush()
     end
 end
 
@@ -62,8 +64,8 @@ end
 
 function Multiplayer.StartServer(ipaddr)
     local enet = require("enet")
-    local host = enet.host_create(ipaddr)
-    host:channel_limit(3)
+    local host = enet.host_create(ipaddr, 64, 3)
+    -- host:channel_limit(3)
     print("host created")
     return host
 end
@@ -101,7 +103,7 @@ function Multiplayer.ServerSend (Game, players, Entities, Walls)     --additionn
     --     players = players,
     --     Entities = Entities
     -- }))
-
+    Game.Server:broadcast("update", Game.enetChannels.NumberChannel)
     Game.Server:flush()
     -- print("Sent data", json.encode(data))
 end
