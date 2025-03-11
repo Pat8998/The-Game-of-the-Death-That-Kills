@@ -7,12 +7,12 @@
 -- CREATE A TO DRAW TABLE SORTED? WiTH AN IF THAT GETS THE BODY TYPE
 --enet channel 2 for connect
 
-local Button = require("buttons")
-local Draw = require("draw")
-local InGame = require("ingame")
-local Walls = require("walls")
-local Player = require("players")
-local Multiplayer = require("multiplayer")
+local Button = require("libs.buttons")
+local Draw = require("libs.draw")
+local InGame = require("libs.ingame")
+local Walls = require("libs.walls")
+local Player = require("libs.players")
+local Multiplayer = require("libs.multiplayer")
 local enet = require "enet"  --put it in global to call it from libraries ???
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
 local fps

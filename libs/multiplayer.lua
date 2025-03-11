@@ -1,5 +1,5 @@
 local Multiplayer = {}
-local json = require("libs.dkjson")
+local json = require("lunajson")
 Multiplayer.ThreadChannel = nil
 Multiplayer.Host = nil
 
@@ -47,8 +47,14 @@ function Multiplayer.Thread(ipaddr, Game)
         local event = host:service()
         if event then
             if event.type == "receive" then
+                if event.channel == Game.enetChannels.EntityChannel then
+                    print("Received from server (entities):", event.data)
+                elseif event.channel == Game.enetChannels.WallsChannel then
+                    print("1st wall's coordinates are", json.decode(event.data))
+                else
                 print("Got message: ", event.data, "from", event.peer, "on channel", event.channel)
-                event.peer:send("world")
+                end
+                event.peer:ping()
             else
                 print(event.type, event.peer, event.data)
             end
