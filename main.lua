@@ -14,6 +14,7 @@ local Walls = require("libs.walls")
 local Player = require("libs.players")
 local Multiplayer = require("libs.multiplayer")
 local enet = require "enet"  --put it in global to call it from libraries ???
+local ffi = require("ffi")
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
 local fps
 local WallsHeight = 2
@@ -36,8 +37,10 @@ local Game = {
         NumberChannel = 0,
         EntityChannel = 1,
         WallsChannel = 2,
-    }       -- If I ever add another channel (for chat or smth) I have to up the number of channels in the connect (multiplayer.lua line 13)
+    },       -- If I ever add another channel (for chat or smth) I have to up the number of channels in the connect (multiplayer.lua line 13)
+
 }
+SharedStates = Multiplayer.CreateSharedState(500, 500)
 local Players = {
     list = {},
     number = 2
@@ -148,7 +151,7 @@ function love.load()
     end
     LocalPlayer = Players.list[1]
 
-    
+
     -- Channels.InputCommuncicationChannel = love.thread.getChannel("InputServerThread")
     -- Channels.OutputCommuncicationChannel = love.thread.getChannel("OutputServerThread")
     -- Channels.GameChannel = love.thread.getChannel("GameServerThread")
@@ -290,7 +293,7 @@ function love.filedropped(file )
     if Game.IsLoading then
             local ThreadScrpit = string.dump(Multiplayer.Thread)
             local MultplayerThread = love.thread.newThread(ThreadScrpit)
-            MultplayerThread:start(content, Game)
+            MultplayerThread:start(content, Game, tonumber(ffi.cast("uintptr_t",  SharedStates.Entities)), tonumber(ffi.cast("uintptr_t",  SharedStates.Walls)))
             Multiplayer.ThreadChannel = love.thread.getChannel("MultplayerThread")
     end
     -- Parse the contents of the file as needed

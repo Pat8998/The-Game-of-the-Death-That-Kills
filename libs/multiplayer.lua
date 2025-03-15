@@ -1,11 +1,67 @@
 local Multiplayer = {}
-local json = require("lunajson")
+local json = require("libs.external.lunajson")
 Multiplayer.ThreadChannel = nil
 Multiplayer.Host = nil
 
-function Multiplayer.Thread(ipaddr, Game)
+local ffi = require("ffi")
+
+
+-- Create a function to allocate shared memory
+function Multiplayer.CreateSharedState(maxEntities, maxWalls)
+    -- Define your C structs
+    ffi.cdef[[
+        typedef struct {
+            double x, y;
+        } Vec2;
+        
+        typedef struct {
+            Vec2 pos;
+            double angle;
+            int number;
+        } Entity;
+        
+        typedef struct {
+            Vec2 start;
+            Vec2 end;
+        } Wall;
+        ]]
+    local Entities = ffi.new("Entity[?]", maxEntities)
+    local Walls = ffi.new("Wall[?]", maxWalls)
+    return {Entities = Entities, Walls = Walls}
+end
+
+
+
+
+
+
+
+function Multiplayer.Thread(ipaddr, Game, EntityPointer, WallPointer)
     local enet = require("enet")
-    local ffi = require("ffi")
+    local json = require("libs.external.lunajson")
+    local ffi = require("ffi")    
+    ffi.cdef[[
+        typedef struct {
+            double x, y;
+        } Vec2;
+        
+        typedef struct {
+            Vec2 pos;
+            double angle;
+            int number;
+            int type;
+        } Entity;
+        
+        typedef struct {
+            Vec2 start;
+            Vec2 end;
+        } Wall;
+        ]]
+    local Entities = ffi.cast("Entity*", ffi.cast("uintptr_t", EntityPointer))
+    local Walls = ffi.cast("Wall*", ffi.cast("uintptr_t", WallPointer))
+
+
+
 
     print("Connecting to", ipaddr)
     local host = enet.host_create()
@@ -48,13 +104,19 @@ function Multiplayer.Thread(ipaddr, Game)
         if event then
             if event.type == "receive" then
                 if event.channel == Game.enetChannels.EntityChannel then
-                    print("Received from server (entities):", event.data)
+                    -- print("Received from server (entities):", event.data)
+                    local data = json.decode(event.data)
+                    for i, obj in ipairs(data) do
+                        Entities[i-1].pos.x = obj.x
+                        Entities[i-1].pos.y = obj.y
+                        Entities[i-1].type = (obj.type == "Bullet") and 1 or 2
+                        Entities[i-1].angle = obj.angle or 0
+                        Entities[i-1].number = obj.number or 0
+                    end
                 elseif event.channel == Game.enetChannels.WallsChannel then
-                    print("1st wall's coordinates are", json.decode(event.data))
                 else
                 print("Got message: ", event.data, "from", event.peer, "on channel", event.channel)
                 end
-                event.peer:ping()
             else
                 print(event.type, event.peer, event.data)
             end
@@ -81,20 +143,24 @@ end
 
 function Multiplayer.ServerSend (Game, players, Entities, Walls)     --additionnaly send player number on the rght channel if there's bad things happening
     local data = {}
-    for _, Entity in ipairs(Entities) do
+    for _, Entity in pairs(Entities) do
+        local x, y = Entity.body:getPosition()
         table.insert(data, {
             type = "Bullet",
-            x = Entity.body:getPosition(),
-            y = Entity.body:getPosition()[2]
+            x = x,
+            y = y
         })
     end
-    for _, p in ipairs(players) do
+    for _, p in pairs(players) do
         table.insert(data, {
             type = "Player",
-            x = p.body:getPosition(),
-            y = p.body:getPosition()[2]
+            x = p.x,
+            y = p.y,
+            number = p.number,
+            angle = p.angle
         })
     end
+    -- print("Sending data", json.encode(data))
     Game.Server:broadcast(json.encode(data), Game.enetChannels.EntityChannel)
     data = {}
     for _, Wall in ipairs(Walls) do
@@ -103,13 +169,6 @@ function Multiplayer.ServerSend (Game, players, Entities, Walls)     --additionn
         })
     end
     Game.Server:broadcast(json.encode(data), Game.enetChannels.WallsChannel)
-    -- Game.Server:broadcast(json.encode({
-    --     type = "update",
-    --     player = player,
-    --     players = players,
-    --     Entities = Entities
-    -- }))
-    Game.Server:broadcast("update", Game.enetChannels.NumberChannel)
     Game.Server:flush()
     -- print("Sent data", json.encode(data))
 end
@@ -140,6 +199,8 @@ function Multiplayer.ServerReceive (players, Channels, Player, Game)
         end
     end
 end
+
+
 
 
 

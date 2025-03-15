@@ -1,5 +1,6 @@
 local InGame = {}
 
+
 function InGame.updateHost(params)
     -- Extract variables from the params table
     local dt = params.dt
@@ -11,7 +12,7 @@ function InGame.updateHost(params)
     local Shoot = params.Shoot
     local Entities = params.Entities
     local DestroyEntity = params.DestroyEntity
-    local Multiplayer = require("Multiplayer")
+    local Multiplayer = require("libs.multiplayer")
     local Game = params.Game
     local Channels = params.Channels
     local Player = params.Player
@@ -93,7 +94,14 @@ function InGame.updateHost(params)
 
 
     world:update(dt)
-    player.x, player.y = player.body:getPosition()
+    for _, p in ipairs(players.list) do
+        p.x, p.y = p.body:getPosition()
+        -- p.angle = p.body:getAngle()
+    end
+    for _, e in pairs(Entities.list) do
+        e.x, e.y = e.body:getPosition()
+        e.angle = e.body:getAngle()
+    end
 
     for key, entity in pairs(Entities.list) do
         if entity.fixture:getUserData() == "bullet" then
@@ -107,8 +115,8 @@ function InGame.updateHost(params)
     if Game.IsPublic then
         Multiplayer.ServerSend(
             Game,
-            players,
-            Entities,
+            players.list,
+            Entities.list,
             Map.walls.list
         )
     end
@@ -139,7 +147,7 @@ function InGame.updateClient(params)
     local WallsHeight = params.WallsHeight
     local Shoot = params.Shoot
     local Entities = params.Entities
-    local DestroyEntity = params.DestroyEntity
+    local Game = params.Game
 
     -- Update mouse and player angle
     if not love.keyboard.isDown("lalt") and love.window.hasFocus() then
@@ -206,18 +214,35 @@ function InGame.updateClient(params)
         player.angle = player.angle - 2 * math.pi
     end
 
-    world:update(dt)
-    player.x, player.y = player.body:getPosition()
 
-    for key, entity in pairs(Entities.list) do
-        if entity.fixture:getUserData() == "bullet" then
-            entity.life = entity.life - dt
-            print(entity.life)
-            if entity.life <= 0 then
-                DestroyEntity(entity)
-            end
-        end
+   
+    -- Access shared memory (replace the empty for loop)
+    Entities.list = {}
+    for _, v in ipairs(Game.SharedStates.Entities) do
+        Entities.list[_] = {
+            x = v.pos.x,
+            y = v.pos.y,
+            type = v.type,
+            angle = v.angle,
+            number = v.number
+        }
     end
+        -- Do something with the data
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 end
 
 return InGame
