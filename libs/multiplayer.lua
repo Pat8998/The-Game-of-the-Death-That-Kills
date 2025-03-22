@@ -6,59 +6,49 @@ Multiplayer.Host = nil
 local ffi = require("ffi")
 
 
--- Create a function to allocate shared memory
-function Multiplayer.CreateSharedState(maxEntities, maxWalls)
-    -- Define your C structs
-    ffi.cdef[[
-        typedef struct {
-            double x, y;
-        } Vec2;
+-- -- Create a function to allocate shared memory
+-- function Multiplayer.CreateSharedState(maxEntities, maxWalls)
+--     -- Define your C structs
+--     ffi.cdef[[
+--         typedef struct {
+--             double x, y;
+--         } Vec2;
         
-        typedef struct {
-            Vec2 pos;
-            double angle;
-            int number;
-        } Entity;
+--         typedef struct {
+--             Vec2 pos;
+--             double angle;
+--             int number;
+--         } Entity;
         
-        typedef struct {
-            Vec2 start;
-            Vec2 end;
-        } Wall;
-        ]]
-    local Entities = ffi.new("Entity[?]", maxEntities)
-    local Walls = ffi.new("Wall[?]", maxWalls)
-    return {Entities = Entities, Walls = Walls}
+--         typedef struct {
+--             Vec2 start;
+--             Vec2 end;
+--         } Wall;
+--         ]]
+--     local Entities = ffi.new("Entity[?]", maxEntities)
+--     local Walls = ffi.new("Wall[?]", maxWalls)
+--     return {Entities = Entities, Walls = Walls}
+-- end
+
+
+function Multiplayer.JoinGame(ipaddr, Game, SharedStatesPointer)
+    local ThreadScrpit = string.dump(Multiplayer.Thread)
+    local MultplayerThread = love.thread.newThread(ThreadScrpit)
+    MultplayerThread:start(ipaddr, Game, tonumber(ffi.cast("uintptr_t",  SharedStatesPointer)))
+    Multiplayer.ThreadChannel = love.thread.getChannel("MultplayerThread")
 end
 
 
 
 
-
-
-
-function Multiplayer.Thread(ipaddr, Game, EntityPointer, WallPointer)
+function Multiplayer.Thread(ipaddr, Game, GameStatePointer)
     local enet = require("enet")
     local json = require("libs.external.lunajson")
     local ffi = require("ffi")    
-    ffi.cdef[[
-        typedef struct {
-            double x, y;
-        } Vec2;
-        
-        typedef struct {
-            Vec2 pos;
-            double angle;
-            int number;
-            int type;
-        } Entity;
-        
-        typedef struct {
-            Vec2 start;
-            Vec2 end;
-        } Wall;
-        ]]
-    local Entities = ffi.cast("Entity*", ffi.cast("uintptr_t", EntityPointer))
-    local Walls = ffi.cast("Wall*", ffi.cast("uintptr_t", WallPointer))
+    local FFIUtils = require("libs.FFIutils")
+    local gameState = ffi.cast("GameState*", ffi.cast("uintptr_t", GameStatePointer))
+    local Entities = gameState.entities
+    local Walls = gameState.walls
 
 
 
@@ -106,13 +96,13 @@ function Multiplayer.Thread(ipaddr, Game, EntityPointer, WallPointer)
                 if event.channel == Game.enetChannels.EntityChannel then
                     -- print("Received from server (entities):", event.data)
                     local data = json.decode(event.data)
-                    for i, obj in ipairs(data) do
-                        Entities[i-1].pos.x = obj.x
-                        Entities[i-1].pos.y = obj.y
-                        Entities[i-1].type = (obj.type == "Bullet") and 1 or 2
-                        Entities[i-1].angle = obj.angle or 0
-                        Entities[i-1].number = obj.number or 0
-                    end
+                    -- for i, obj in ipairs(data) do
+                    --     Entities[i].pos.x = obj.x
+                    --     Entities[i-1].pos.y = obj.y
+                    --     Entities[i-1].type = (obj.type == "Bullet") and 1 or 2
+                    --     Entities[i-1].angle = obj.angle or 0
+                    --     Entities[i-1].number = obj.number or 0
+                    -- end      -- PROBLEMS
                 elseif event.channel == Game.enetChannels.WallsChannel then
                 else
                 print("Got message: ", event.data, "from", event.peer, "on channel", event.channel)

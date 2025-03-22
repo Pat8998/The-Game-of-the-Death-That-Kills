@@ -13,6 +13,7 @@ local InGame = require("libs.ingame")
 local Walls = require("libs.walls")
 local Player = require("libs.players")
 local Multiplayer = require("libs.multiplayer")
+local FFIutils = require("libs.FFIutils")
 local enet = require "enet"  --put it in global to call it from libraries ???
 local ffi = require("ffi")
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
@@ -40,7 +41,7 @@ local Game = {
     },       -- If I ever add another channel (for chat or smth) I have to up the number of channels in the connect (multiplayer.lua line 13)
 
 }
-SharedStates = Multiplayer.CreateSharedState(500, 500)
+SharedStates = FFIutils.CreateSharedState(500, 500)
 local Players = {
     list = {},
     number = 2
@@ -80,6 +81,7 @@ function love.load()
         end),
         JoinGame = Button:new(screen_width/2 -100, 500, 200, 50, "Join Game", function ()
         Game.IsLoading = true
+        Multiplayer.JoinGame("localhost:6789", Game, SharedStates)
         end),
         SetPublic =  Button:new(screen_width/2 -100, 600, 200, 50, "SetPublic", function ()
             Game.IsPublic = true
@@ -99,7 +101,8 @@ function love.load()
             Buttons.StopServer.isActive = false
         end, {isActive = false})
     }
-    -- Buttons.StopServer.isActive = false
+
+    
     InGameCanvas = love.graphics.newCanvas(love.graphics.getWidth(), love.graphics.getHeight())
     blurShader = love.graphics.newShader[[
         extern number blurSize;
@@ -197,8 +200,19 @@ function love.update(dt)
             --send client info
         --end
     elseif Game.InClientGame then
-        -- get the info idk how
-        -- InGame.updateClient()
+        InGame.updateClient({
+            dt = dt,
+            dmouse = dmouse,                -- dmouse table (must contain dmouse.x)
+            mouse = mouse,                  -- mouse table (must contain x, y, lb, etc.)
+            Multiplayer = Multiplayer,
+            Game = Game,
+            Entities = Entities,
+            localplayer = LocalPlayer,
+            Map = Map,
+            SharedStates = SharedStates,
+            ffi = ffi,
+            FFIutils = FFIutils
+        })
         
     else
         Game.IsPaused = true
@@ -291,14 +305,8 @@ end
 function love.filedropped(file )
     local content = file:read() -- Read the entire contents of the file
     if Game.IsLoading then
-            local ThreadScrpit = string.dump(Multiplayer.Thread)
-            local MultplayerThread = love.thread.newThread(ThreadScrpit)
-            MultplayerThread:start(content, Game, tonumber(ffi.cast("uintptr_t",  SharedStates.Entities)), tonumber(ffi.cast("uintptr_t",  SharedStates.Walls)))
-            Multiplayer.ThreadChannel = love.thread.getChannel("MultplayerThread")
+            Multiplayer.JoinGame(content, Game, SharedStates)
     end
-    -- Parse the contents of the file as needed
-    -- For example, print the contents to the console
-    print(content)
 end
 
 

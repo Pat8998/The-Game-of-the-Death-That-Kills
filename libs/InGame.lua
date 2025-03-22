@@ -140,14 +140,15 @@ end
 function InGame.updateClient(params)
     -- Extract variables from the params table
     local dt = params.dt
-    local player = params.player
     local dmouse = params.dmouse
     local mouse = params.mouse
-    local world = params.world
-    local WallsHeight = params.WallsHeight
-    local Shoot = params.Shoot
-    local Entities = params.Entities
     local Game = params.Game
+    local Entities = params.Entities
+    local player = params.localplayer
+    local Map = params.Map
+    local SharedStates = params.SharedStates
+    local ffi = params.ffi
+    local FFIutils = params.FFIutils
 
     -- Update mouse and player angle
     if not love.keyboard.isDown("lalt") and love.window.hasFocus() then
@@ -177,35 +178,38 @@ function InGame.updateClient(params)
     end
 
     -- Update movement based on keys pressed
-    if love.keyboard.isDown("z") then
-        player.mx = math.cos(player.angle) * moveSpeed
-        player.my = math.sin(player.angle) * moveSpeed
-    elseif love.keyboard.isDown("s") then
-        player.mx = -math.cos(player.angle) * moveSpeed
-        player.my = -math.sin(player.angle) * moveSpeed
-    end
-    if love.keyboard.isDown("d") then
-        player.mx = -math.cos(player.angle + math.pi / 2) * moveSpeed
-        player.my = -math.sin(player.angle + math.pi / 2) * moveSpeed
-    elseif love.keyboard.isDown("q") then
-        player.mx = math.cos(player.angle + math.pi / 2) * moveSpeed
-        player.my = math.sin(player.angle + math.pi / 2) * moveSpeed
-    end
+    -- if love.keyboard.isDown("z") then
+    --     player.mx = math.cos(player.angle) * moveSpeed
+    --     player.my = math.sin(player.angle) * moveSpeed
+    -- elseif love.keyboard.isDown("s") then
+    --     player.mx = -math.cos(player.angle) * moveSpeed
+    --     player.my = -math.sin(player.angle) * moveSpeed
+    -- end
+    -- if love.keyboard.isDown("d") then
+    --     player.mx = -math.cos(player.angle + math.pi / 2) * moveSpeed
+    --     player.my = -math.sin(player.angle + math.pi / 2) * moveSpeed
+    -- elseif love.keyboard.isDown("q") then
+    --     player.mx = math.cos(player.angle + math.pi / 2) * moveSpeed
+    --     player.my = math.sin(player.angle + math.pi / 2) * moveSpeed
+    -- end
 
-    player.body:setLinearVelocity(player.mx, player.my)
-    player.mx, player.my = 0, 0
+    -- -- player.body:setLinearVelocity(player.mx, player.my)
+    -- player.mx, player.my = 0, 0
 
-    if love.mouse.isDown(2) then
-        player.fov = math.max(math.pi / 3, player.fov - math.pi / 6 * dt * 4)
-        WallsHeight = math.min(3, WallsHeight + dt * 4)
-    else
-        player.fov = math.min(math.pi / 2, player.fov + math.pi / 6 * dt * 4)
-        WallsHeight = math.max(2, WallsHeight - dt * 4)
-    end
+    -- if love.mouse.isDown(2) then
+    --     player.fov = math.max(math.pi / 3, player.fov - math.pi / 6 * dt * 4)
+    --     WallsHeight = math.min(3, WallsHeight + dt * 4)
+    -- else
+    --     player.fov = math.min(math.pi / 2, player.fov + math.pi / 6 * dt * 4)
+    --     WallsHeight = math.max(2, WallsHeight - dt * 4)
+    -- end
 
-    if mouse.lb then
-        Shoot(dt, player, 0.1, "default")
-    end
+    -- if mouse.lb then
+    --     Shoot(dt, player, 0.1, "default")
+    -- end
+
+
+
 
     -- Normalize angles to be within -pi to pi
     if player.angle < -math.pi then
@@ -215,18 +219,21 @@ function InGame.updateClient(params)
     end
 
 
-   
-    -- Access shared memory (replace the empty for loop)
+    -- Update entities from shared memory
     Entities.list = {}
-    for _, v in ipairs(Game.SharedStates.Entities) do
-        Entities.list[_] = {
-            x = v.pos.x,
-            y = v.pos.y,
-            type = v.type,
-            angle = v.angle,
-            number = v.number
+    local entityState = SharedStates.entities
+    -- print("Entity count: ", SharedStates.entityCount)       -- Prints the pointer istead of the  value
+    for i = 0, SharedStates.entityCount-1 do
+        local entity = entityState[i]
+        Entities.list[i+1] = {
+            x = entity.pos.x,
+            y = entity.pos.y,
+            type = entity.type,
+            angle = entity.angle,
+            number = entity.number
         }
     end
+    print("Entities list length: ", #Entities.list)
         -- Do something with the data
 
 
