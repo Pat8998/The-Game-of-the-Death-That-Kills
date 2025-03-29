@@ -8,9 +8,9 @@
 
  - Type of game : FPS (+ brawlstarlike -> to see through walls from above)
 
- - Multiplayer : solo, online, splitcreen (j'en souffre déjà rien que d'y penser)
+ - Multiplayer : solo, online, splitcreen (gonna be haaaard (possible with canvas most likely))
 
- - Graphic style : undefined
+ - Graphic style : undefined, building functionnality right now
 ### (My first game ever :)
 ## How to build
 https://www.love2d.org/wiki/Building_L%C3%96VE
