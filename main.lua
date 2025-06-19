@@ -14,9 +14,7 @@ local Walls = require("libs.walls")
 local Player = require("libs.players")
 local Multiplayer = require("libs.multiplayer")
 local Client = require("libs.client")
-local FFIutils = require("libs.FFIutils")
 local enet = require "enet"  --put it in global to call it from libraries ???
-local ffi = require("ffi")
 local json = require("libs.external.lunajson")
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
 local fps
@@ -63,7 +61,6 @@ local Game = {
 end,
 
 }
-SharedStates = FFIutils.CreateSharedState(500, 500)
 local Players = {
     list = {},
     number = 2
@@ -238,9 +235,6 @@ function love.update(dt)
             Entities = Entities,
             localplayer = LocalPlayer,
             Map = Map,
-            SharedStates = SharedStates,
-            ffi = ffi,
-            FFIutils = FFIutils,
             json = json,
             Players = Players,
             Client = Client
