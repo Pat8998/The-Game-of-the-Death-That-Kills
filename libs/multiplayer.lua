@@ -3,48 +3,12 @@ local json = require("libs.external.lunajson")
 Multiplayer.ThreadChannel = nil
 Multiplayer.Host = nil
 
-
-
--- -- Create a function to allocate shared memory
--- function Multiplayer.CreateSharedState(maxEntities, maxWalls)
---     -- Define your C structs
---     ffi.cdef[[
---         typedef struct {
---             double x, y;
---         } Vec2;
-        
---         typedef struct {
---             Vec2 pos;
---             double angle;
---             int number;
---         } Entity;
-        
---         typedef struct {
---             Vec2 start;
---             Vec2 end;
---         } Wall;
---         ]]
---     local Entities = ffi.new("Entity[?]", maxEntities)
---     local Walls = ffi.new("Wall[?]", maxWalls)
---     return {Entities = Entities, Walls = Walls}
--- end
-
-
--- function Multiplayer.JoinGame(ipaddr, Game, SharedStatesPointer)
---     local ThreadScrpit = string.dump(Multiplayer.Thread)
---     local MultplayerThread = love.thread.newThread(ThreadScrpit)
---     MultplayerThread:start(ipaddr, Game, tonumber(ffi.cast("uintptr_t",  SharedStatesPointer)))
---     Multiplayer.ThreadChannel = love.thread.getChannel("MultplayerThread")
--- end
-
-
-
-
-function Multiplayer.StartServer(ipaddr)
+function Multiplayer.StartServer(ipaddr, channelsamount)
     local enet = require("enet")
-    local host = enet.host_create(ipaddr, 64, 3)
+    local host = enet.host_create(ipaddr, 64, channelsamount)  --64 is the max number of clients, 4 is the number of channels
     -- host:channel_limit(3)
     print("host created")
+    print()
     return host
 end
 
@@ -71,45 +35,113 @@ function Multiplayer.ServerSend (Game, players, Entities, Walls)     --additionn
         })
     end
     -- print("Sending data", json.encode(data))
-    Game.Server:broadcast(json.encode(data), Game.enetChannels.EntityChannel)
-    data = {}
-    for _, Wall in ipairs(Walls) do
-        table.insert(data, {
-            pos = Wall.pos
-        })
+    Game.Server.host:broadcast(json.encode(data), Game.enetChannels.EntityChannel)
+    if Game.IsMajorFrame then
+        -- print("Sending walls data")
+        data = {}
+        for _, Wall in ipairs(Walls) do
+            table.insert(data, {
+                pos = Wall.pos
+            })
+        end
+        Game.Server.host:broadcast(json.encode(data), Game.enetChannels.WallsChannel)
     end
-    Game.Server:broadcast(json.encode(data), Game.enetChannels.WallsChannel)
-    Game.Server:flush()
+    Game.Server.host:flush()
     -- print("Sent data", json.encode(data))
 end
 
 
-function Multiplayer.ServerReceive (players, Channels, Player, Game)
-    for index, peer in ipairs(Game.Clients) do
-        local event = peer:receive()
-        if event then
-            if event.type == "receive" then
-                print("Got message: ", event.data, "from", event.peer)
-                event.peer:send("world")
-            else
-                print(event.type, event.peer, event.data)
-            end
-        end
-    end
-    local event = Game.Server:service()
-    if event then
+function Multiplayer.ServerReceive (dt, players, Channels, Player, Game)
+    -- for index, player in ipairs(players.list) do
+    --     if player.peer ~= "local" then
+    --         local event = player.peer:receive()
+    --         if event then
+    --             print("Got message: ", event.data, "from", event.peer , "on channel", event.channel)
+    --             if event.type == "receive" then
+    --                 event.peer:send("world")
+    --             else
+    --                 print(event.type, event.peer, event.data)
+    --             end
+    --         end
+    --     end
+    -- end
+    local event = Game.Server.host:service()
+    while event do
         if event.type == "connect" then
             print("A client connected from", event.peer)
-            players.list[#players.list + 1] = Player.createPlayer(#players.list + 1, world)
+            
+            -- Find the first unassigned player number
+            local assigned = {}
+            for _, v in ipairs(players.list) do
+                assigned[v.number] = true
+            end
+            local new_number = 1
+            while assigned[new_number] do
+                new_number = new_number + 1
+            end
+            players.list[new_number] = Player.createPlayer(new_number, world, event.peer)
             print("Sending player number", players.list[#players.list].number)
             event.peer:send(players.list[#players.list].number, Game.enetChannels.NumberChannel)
             Game.Clients[#Game.Clients + 1] = event.peer
-        else
-            print(event.type, event.peer, event.data)
+            Game.IsMajorFrame = true  -- Set the major frame flag to true when a new client connects
+        elseif event.type == "disconnect" then
+            print("A client disconnected from", event.peer)
+            for i, client in ipairs(Game.Clients) do
+                if client == event.peer then
+                    table.remove(Game.Clients, i)
+                    break
+                end
+            end
+            for i, client in pairs(players.list) do
+                -- print("Checking player", client.number, "against peer", event.peer)
+                if client.peer == event.peer then
+                    print("Player", client.number, "destroyed")
+                    client:destroy()  -- Destroy the player object
+                    table.remove(players.list, i)  -- Remove the player from the list
+                    break
+                end
+            end
+        elseif event.type == "receive" then
+            if event.channel == Game.enetChannels.ActionChannel then
+                -- print("Received action from player", event.peer, ":", event.data)
+                local data = json.decode(event.data)
+                if data then
+                    if data.type == "move" then
+                        for i, client in pairs(players.list) do
+                            if client.peer == event.peer then
+                                event.player = client
+                                break
+                            end
+                        end
+                        -- print("Received move command from player", event.player, ":", data.dir, data.speed)
+                        event.player.dir = data.dir
+                        -- print("Player", event.player.number, "moving in direction", event.player.dir, "with speed", data.speed)
+                        if data.speed == 2 then
+                            event.player.moveSpeed = 2200
+                        elseif data.speed == 1 then
+                            event.player.moveSpeed = 1100
+                        elseif not event.player.Glide then
+                            event.player.moveSpeed = 0
+                        end
+                        event.player.angle = data.angle
+                    elseif data.type == "shoot" then
+                        for i, client in pairs(players.list) do
+                            if client.peer == event.peer then
+                                event.player = client
+                                break
+                            end
+                        end
+                        Game.Shoot(dt, event.player, 0.1, data.weapon)  -- Call the shoot function with the player and weapon type
+                        -- Handle shooting logic here
+                    end
+                end
+            else
+                print("event ", event.type, event.peer, event.data, event.channel)
+            end
         end
+        event = Game.Server.host:service()
     end
 end
-
 
 
 

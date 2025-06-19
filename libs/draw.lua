@@ -93,7 +93,7 @@ function Draw.InGame(params)
 
     -- Draw entities
     for key, entity in pairs(Entities.list) do
-        local x, y = entity.body:getPosition()
+        local x, y = entity.x, entity.y or entity.body:getPosition()
         love.graphics.points(x + 25, -y + 200)
 
         local relative_pos = {
@@ -117,6 +117,7 @@ function Draw.InGame(params)
     end
     love.graphics.setColor(0.001, 1, 0.001)
     for key, otherplayer in pairs(Players.list) do
+        -- print(otherplayer.y)
         local x, y = otherplayer.x, otherplayer.y
         love.graphics.points(x + 25, -y + 200)
 

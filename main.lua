@@ -13,6 +13,7 @@ local InGame = require("libs.ingame")
 local Walls = require("libs.walls")
 local Player = require("libs.players")
 local Multiplayer = require("libs.multiplayer")
+local Client = require("libs.client")
 local FFIutils = require("libs.FFIutils")
 local enet = require "enet"  --put it in global to call it from libraries ???
 local ffi = require("ffi")
@@ -33,19 +34,34 @@ local Game = {
     IsConnectedToHost = false,
     InMM = false, --For now pause menu is main menu but it'll change
     IsJoining = 0,
-    Server = nil,        --might have to move it somewhere else because Cannot send it th threads
+    Server = {
+        ipaddr = "localhost:6789",
+        host = nil,
+        peer = nil,  --peer is the connection to the host
+    }   ,        --might have to move it somewhere else because Cannot send it th threads
     Clients = {},
+    IsMajorFrame = false, -- If the game is in a major frame (update what neeed ds to be updated)
     Debug = "debug",
     enetChannels = {
         NumberChannel = 0,
         EntityChannel = 1,
         WallsChannel = 2,
-    },       -- If I ever add another channel (for chat or smth) I have to up the number of channels in the connect (multiplayer.lua line 13)
+        ActionChannel = 3,
 
-}
-local Server = {
-    ipaddr = "localhost:6789",
-    host = nil,
+        amount = 4,  -- Number of channels used in the game
+    },       -- If I ever add another channel (for chat or smth) I have to up the number of channels in the connect (multiplayer.lua line 13)
+    Shoot = function (dt, player, speed, Bullet_type)
+        local body = love.physics.newBody(world, player.x, player.y, "dynamic")
+        local fixture = love.physics.newFixture(body, Entities.defaultShapes.bullet, 1)
+        local angle = player.angle + math.random(-200, 200)*0.0001
+        fixture:setUserData("bullet")
+        fixture:setMask(player.number)
+        fixture:setCategory(player.number)
+        body:setBullet(true)
+        body:applyLinearImpulse(math.cos(angle) *speed , math.sin(angle) *speed)
+        Entities.list[body] = {body = body, fixture = fixture, angle = player.angle, player = player, life = 2}
+end,
+
 }
 SharedStates = FFIutils.CreateSharedState(500, 500)
 local Players = {
@@ -87,7 +103,7 @@ function love.load()
         end),
         JoinGame = Button:new(screen_width/2 -100, 500, 200, 50, "Join Game", function ()
         Game.IsLoading = true
-        Server.ipaddr = "localhost:6789"
+        Game.Server.ipaddr = "localhost:6789"
         Game.IsJoining = 1
         -- Multiplayer.JoinGame("localhost:6789", Game, SharedStates)
         end),
@@ -95,7 +111,7 @@ function love.load()
             Game.IsPublic = true
             -- love.thread.newThread(string.dump(Multiplayer.StartServer)):start(Game)
             --ABOVE LINE IF ANY LAG IS CAUSED WITHOUT THE THREAD
-            Game.Server = Multiplayer.StartServer("localhost:6789")
+            Game.Server.host = Multiplayer.StartServer("localhost:6789", Game.enetChannels.amount)
             Buttons.SetPublic.isActive = false
             Buttons.StopServer.isActive = true
         end),
@@ -103,7 +119,7 @@ function love.load()
             Game.IsPublic = false
             -- love.thread.getChannel("MultplayerThread"):push(Game)
             --ABOVE LINES IF ANY LAG IS CAUSED WITHOUT THE THREAD
-            Game.Server = Game.Server:destroy()
+            Game.Server.host = Game.Server.host:destroy()
             print("Server stopped")
             Buttons.SetPublic.isActive = true
             Buttons.StopServer.isActive = false
@@ -172,14 +188,20 @@ end
 
 function love.update(dt)
     fps=1/dt
+    -- fps = love.timer.getFPS()
+    Game.IsMajorFrame = IsMajorFrame()  -- Check if it's a major frame
     local dmouse = {x=love.mouse.getPosition()-mouse.x, y= love.mouse.getPosition()-mouse.y}
     mouse.x, mouse.y = love.mouse.getPosition()
     mouse.lb, mouse.rb, mouse.mb = love.mouse.isDown(1),love.mouse.isDown(2),love.mouse.isDown(3)
     if Game.IsPaused then
         Game.InHostedGame = false
         if Game.IsLoading then
-            Multiplayer.ThreadChannel = Multiplayer.ThreadChannel or love.thread.getChannel("MultplayerThread")
-            InGame.UpdateWhileLoading(Multiplayer.ThreadChannel, Game, enet, json, Server)
+            -- Multiplayer.ThreadChannel = Multiplayer.ThreadChannel or love.thread.getChannel("MultplayerThread")
+            InGame.UpdateWhileLoading({
+                game = Game,
+                enet = enet,
+                localplayer = LocalPlayer,
+            })
         else
             UpdateMenu(dt)
         end
@@ -220,8 +242,9 @@ function love.update(dt)
             SharedStates = SharedStates,
             ffi = ffi,
             FFIutils = FFIutils,
-            Server = Server,
             json = json,
+            Players = Players,
+            Client = Client
         })
         
     else
@@ -304,6 +327,9 @@ function love.keypressed(key)
         love.mouse.setGrabbed(not Game.IsPaused)
         love.mouse.setVisible(Game.IsPaused)
     end
+    if key == "g" then
+        LocalPlayer.Glide = not LocalPlayer.Glide
+    end
 end
 
 
@@ -316,22 +342,16 @@ function love.filedropped(file )
     local content = file:read() -- Read the entire contents of the file
     if Game.IsLoading then
             Game.IsJoining = 1
-            Server.ipaddr = content
+            Game.Server.ipaddr = content
     end
 end
 
-
-function Shoot(dt, player, speed, Bullet_type)
-    local body = love.physics.newBody(world, player.x, player.y, "dynamic")
-    local fixture = love.physics.newFixture(body, Entities.defaultShapes.bullet, 1)
-    local angle = player.angle + math.random(-200, 200)*0.0001
-    fixture:setUserData("bullet")
-    fixture:setMask(player.number)
-    fixture:setCategory(player.number)
-    body:setBullet(true)
-    body:applyLinearImpulse(math.cos(angle) *speed , math.sin(angle) *speed)
-    Entities.list[body] = {body = body, fixture = fixture, angle = player.angle, player = player, life = 2}
+function IsMajorFrame()
+    -- return false
+    return math.fmod(math.random(1, 60), 60) == 0
 end
+
+
 
 function DestroyEntity(entity)
     if entity ~= nil then
@@ -342,7 +362,7 @@ function DestroyEntity(entity)
 end
 
 function beginContact(a, b, coll)
-    print ("colliding" , a:getUserData() , "with" , b:getUserData())
+    -- print ("colliding" , a:getUserData() , "with" , b:getUserData())
     Debug ="colliding" .. a:getUserData() .. "with" .. b:getUserData()
     -- Get userdata of the colliding objects
     local userdataA = a:getUserData()
