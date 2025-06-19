@@ -8,12 +8,18 @@ function Draw:Menu(Buttons)
     end
 end
 
+function Draw.LoadingScreen()
+    love.graphics.print("DROP FILE", 500, 500)
+    love.graphics.setBackgroundColor(0.2, 0.2, 0.9, 1)
+    --Spin a Circle ??
+end
+
 function Draw.InGame(params)
 
     -- Extract variables from the passed table
     local player            = params.player
     local fps               = params.fps
-    local Debug             = params.Debug
+    local Game             = params.Game
     local Walls             = params.Walls
     local screen_width      = params.screen_width
     local screen_height     = params.screen_height
@@ -30,7 +36,7 @@ function Draw.InGame(params)
     love.graphics.print("x: " .. tostring(player.x), 0, 20)
     love.graphics.print("y: " .. tostring(player.y), 0, 40)
     love.graphics.print("angle: " .. tostring(player.angle * 180 / math.pi), 0, 60)
-    love.graphics.print(Debug, 0, 80)
+    love.graphics.print(Game.Debug, 0, 80)
 
     -- Draw walls
     love.graphics.setColor(255, 255, 255, 255)
@@ -87,7 +93,7 @@ function Draw.InGame(params)
 
     -- Draw entities
     for key, entity in pairs(Entities.list) do
-        local x, y = entity.body:getPosition()
+        local x, y = entity.x, entity.y or entity.body:getPosition()
         love.graphics.points(x + 25, -y + 200)
 
         local relative_pos = {
@@ -111,7 +117,8 @@ function Draw.InGame(params)
     end
     love.graphics.setColor(0.001, 1, 0.001)
     for key, otherplayer in pairs(Players.list) do
-        local x, y = otherplayer.body:getPosition()
+        -- print(otherplayer.y)
+        local x, y = otherplayer.x, otherplayer.y
         love.graphics.points(x + 25, -y + 200)
 
         local relative_pos = {

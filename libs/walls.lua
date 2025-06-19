@@ -358,6 +358,8 @@ function Walls:generate(seed)
             wall.fixture:setCategory(16)
 
             table.insert(Walls.list, {pos = {{wall[1][1], wall[1][2]}, {wall[2][1], wall[2][2]}}, body = wall.body, shape = wall.shape, fixture = wall.fixture})
+            -- table.insert(Walls.list, {pos = {s = {x = wall[1][1], y = wall[1][2]}, e = {x = wall[2][1], y = wall[2][2]}}, body = wall.body, shape = wall.shape, fixture = wall.fixture})
+
     end
     
     return Walls.list

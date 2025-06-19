@@ -5,14 +5,19 @@
 
 --BIG PROBLEM : HOW TO KNOW WETHER YOU DRAW WALLS OR ENTITIES ?
 -- CREATE A TO DRAW TABLE SORTED? WiTH AN IF THAT GETS THE BODY TYPE
+--enet channel 2 for connect
 
-
-local Button = require("buttons")
-local Draw = require("draw")
-local InGame = require("ingame")
-local Walls = require("walls")
-local Player = require("players")
---local Draw = dofile("draw.lua")
+local Button = require("libs.buttons")
+local Draw = require("libs.draw")
+local InGame = require("libs.ingame")
+local Walls = require("libs.walls")
+local Player = require("libs.players")
+local Multiplayer = require("libs.multiplayer")
+local Client = require("libs.client")
+local FFIutils = require("libs.FFIutils")
+local enet = require "enet"  --put it in global to call it from libraries ???
+local ffi = require("ffi")
+local json = require("libs.external.lunajson")
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
 local fps
 local WallsHeight = 2
@@ -20,15 +25,53 @@ local test = "nil"
 local data = {}
 local Map = {walls = {list = {}}}
 local Entities = {}
-local Debug = "Debug"
 local Game = {
     InHostedGame = false,
     InClientGame = false,
-    IsPaused = true
+    IsPaused = true,
+    IsLoading = false,
+    IsPublic = false,
+    IsConnectedToHost = false,
+    InMM = false, --For now pause menu is main menu but it'll change
+    IsJoining = 0,
+    Server = {
+        ipaddr = "localhost:6789",
+        host = nil,
+        peer = nil,  --peer is the connection to the host
+    }   ,        --might have to move it somewhere else because Cannot send it th threads
+    Clients = {},
+    IsMajorFrame = false, -- If the game is in a major frame (update what neeed ds to be updated)
+    Debug = "debug",
+    enetChannels = {
+        NumberChannel = 0,
+        EntityChannel = 1,
+        WallsChannel = 2,
+        ActionChannel = 3,
+
+        amount = 4,  -- Number of channels used in the game
+    },       -- If I ever add another channel (for chat or smth) I have to up the number of channels in the connect (multiplayer.lua line 13)
+    Shoot = function (dt, player, speed, Bullet_type)
+        local body = love.physics.newBody(world, player.x, player.y, "dynamic")
+        local fixture = love.physics.newFixture(body, Entities.defaultShapes.bullet, 1)
+        local angle = player.angle + math.random(-200, 200)*0.0001
+        fixture:setUserData("bullet")
+        fixture:setMask(player.number)
+        fixture:setCategory(player.number)
+        body:setBullet(true)
+        body:applyLinearImpulse(math.cos(angle) *speed , math.sin(angle) *speed)
+        Entities.list[body] = {body = body, fixture = fixture, angle = player.angle, player = player, life = 2}
+end,
+
 }
+SharedStates = FFIutils.CreateSharedState(500, 500)
 local Players = {
     list = {},
     number = 2
+}
+local Channels = {
+    InputCommuncicationChannel = nil,
+    OutputCommuncicationChannel = nil,
+    GameChannel = nil
 }
 local LocalPlayer = Players.list[0]
 local BackgroundImage = love.graphics.newImage('ayakaka.png')
@@ -46,18 +89,44 @@ function love.load()
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
     local screen_width, screen_height = love.graphics.getWidth(), love.graphics.getHeight()
     Buttons = {
-        myButton = Button:new(screen_width/2  -100, 200, 200, 50, "Click Me!"),
+        Quit = Button:new(screen_width/2 -100, 200, 200, 50, "Quit", function()
+            love.event.quit()
+        end),
         StartGame = Button:new(screen_width/2 -100, 300, 200, 50, "Start game ❤!", function()
             print("Game Started !")
             Game.InHostedGame = true
+            Game.IsPaused = false
         end),
         GenerateWalls = Button:new(screen_width/2 -100, 400, 200, 50, "Generate Walls", function()
             Walls:clear(Map.walls.list)   -- Clear the walls list
             Map.walls.list = Walls:generate(20)
-        end)
-
+        end),
+        JoinGame = Button:new(screen_width/2 -100, 500, 200, 50, "Join Game", function ()
+        Game.IsLoading = true
+        --Game.Server.ipaddr = "localhost:6789"
+        --Game.IsJoining = 1
+        end),
+        SetPublic =  Button:new(screen_width/2 -100, 600, 200, 50, "SetPublic", function ()
+            Game.IsPublic = true
+            -- love.thread.newThread(string.dump(Multiplayer.StartServer)):start(Game)
+            --ABOVE LINE IF ANY LAG IS CAUSED WITHOUT THE THREAD
+            Game.Server.host = Multiplayer.StartServer("localhost:6789", Game.enetChannels.amount)
+            Buttons.SetPublic.isActive = false
+            Buttons.StopServer.isActive = true
+        end),
+        StopServer = Button:new(screen_width/2 -100, 700, 200, 50, "StopServer", function ()
+            Game.IsPublic = false
+            -- love.thread.getChannel("MultplayerThread"):push(Game)
+            --ABOVE LINES IF ANY LAG IS CAUSED WITHOUT THE THREAD
+            Game.Server.host = Game.Server.host:destroy()
+            print("Server stopped")
+            Buttons.SetPublic.isActive = true
+            Buttons.StopServer.isActive = false
+        end, {isActive = false})
     }
-    InGameCanvas = love.graphics.newCanvas(love.graphics.getWidth(), love.graphics.getHeight())    
+
+    
+    InGameCanvas = love.graphics.newCanvas(love.graphics.getWidth(), love.graphics.getHeight())
     blurShader = love.graphics.newShader[[
         extern number blurSize;
         vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords)
@@ -77,7 +146,7 @@ function love.load()
     ]]
     blurShader:send("blurSize", 1.0 / 100.0)
 
-    
+
 
     love.physics.setMeter(64)
     world = love.physics.newWorld(0, 0, true)
@@ -107,18 +176,36 @@ function love.load()
         -- Players.list[i]s [Players.list[i].number] = Players.list[i]
     end
     LocalPlayer = Players.list[1]
-    print(LocalPlayer)
+
+
+    -- Channels.InputCommuncicationChannel = love.thread.getChannel("InputServerThread")
+    -- Channels.OutputCommuncicationChannel = love.thread.getChannel("OutputServerThread")
+    -- Channels.GameChannel = love.thread.getChannel("GameServerThread")
 end
 
 
 
 function love.update(dt)
     fps=1/dt
+    -- fps = love.timer.getFPS()
+    Game.IsMajorFrame = IsMajorFrame()  -- Check if it's a major frame
     local dmouse = {x=love.mouse.getPosition()-mouse.x, y= love.mouse.getPosition()-mouse.y}
     mouse.x, mouse.y = love.mouse.getPosition()
     mouse.lb, mouse.rb, mouse.mb = love.mouse.isDown(1),love.mouse.isDown(2),love.mouse.isDown(3)
     if Game.IsPaused then
-        UpdateMenu(dt)
+        Game.InHostedGame = false
+        if Game.IsLoading then
+            -- Multiplayer.ThreadChannel = Multiplayer.ThreadChannel or love.thread.getChannel("MultplayerThread")
+            InGame.UpdateWhileLoading({
+                game = Game,
+                enet = enet,
+                localplayer = LocalPlayer,
+            })
+        else
+            UpdateMenu(dt)
+        end
+    elseif not Game.InClientGame and not Game.InMM then
+        Game.InHostedGame = true
     end
     if Game.InHostedGame then
         InGame.updateHost({
@@ -130,20 +217,39 @@ function love.update(dt)
             world = world,                  -- physics world
             Shoot = Shoot,                  -- Shoot function
             Entities = Entities,            -- Entities table with Entities.list
-            DestroyEntity = DestroyEntity   -- function to destroy an entity
-        
+            DestroyEntity = DestroyEntity,   -- function to destroy an entity
+            Multiplayer = Multiplayer,
+            Game = Game,
+            Channels = Channels,
+            Player = Player,
+            Map = Map
         })
+    -- Channels.GameChannel:push(Game)     -- USELESS
         --if caca= dz then
             --send client info
         --end
     elseif Game.InClientGame then
-        -- get the info idk how
-        InGame.updateClient(
-
-        )
+        InGame.updateClient({
+            dt = dt,
+            dmouse = dmouse,                -- dmouse table (must contain dmouse.x)
+            mouse = mouse,                  -- mouse table (must contain x, y, lb, etc.)
+            Multiplayer = Multiplayer,
+            Game = Game,
+            Entities = Entities,
+            localplayer = LocalPlayer,
+            Map = Map,
+            SharedStates = SharedStates,
+            ffi = ffi,
+            FFIutils = FFIutils,
+            json = json,
+            Players = Players,
+            Client = Client
+        })
+        
     else
         Game.IsPaused = true
     end
+    Game.debug = "Debug :" .. tostring(Game.Debug)
 end
 
 
@@ -160,14 +266,12 @@ end
 
 
 function love.draw()
-    local screen_width = love.graphics.getWidth()
-    local large_sreen_width = 2*math.pi*screen_width/LocalPlayer.fov
-    local screen_height = love.graphics.getHeight()
+    local large_sreen_width = 2*math.pi*love.graphics.getWidth()/LocalPlayer.fov
     if Game.InHostedGame or Game.InClientGame then
         Draw.InGame({
             player = LocalPlayer,                         -- your player table
             fps = fps,                               -- your current FPS value
-            Debug = Debug,                           -- your debug text/variable
+            Game = Game,                           -- your debug text/variable
             Walls = Map.walls.list,                           -- your walls table
             screen_width = love.graphics.getWidth(),
             screen_height = love.graphics.getHeight(),
@@ -176,7 +280,9 @@ function love.draw()
             Entities = Entities,                      -- your entities table
             Players = Players
    })
-    else
+    elseif Game.IsLoading then
+        Draw.LoadingScreen()
+    else    --MM for now I guess
         love.graphics.setCanvas(InGameCanvas)  -- Set the canvas as the target
         love.graphics.clear(0, 0, 0, 0)    -- Clear it (transparent)
         love.graphics.setCanvas()            -- Reset to the default screen
@@ -184,7 +290,7 @@ function love.draw()
             Draw.InGame({
                 player = LocalPlayer,                         -- your player table
                 fps = fps,                               -- your current FPS value
-                Debug = Debug,                           -- your debug text/variable
+                Game = Game,                           -- your debug text/variable
                 Walls = Map.walls.list,                           -- your walls table
                 screen_width = love.graphics.getWidth(),
                 screen_height = love.graphics.getHeight(),
@@ -216,9 +322,12 @@ function love.keypressed(key)
         love.mouse.setPosition(love.graphics.getWidth()/2, love.graphics.getHeight()/2)
     end
     if key == "escape" then
-        Game.InHostedGame = not Game.InHostedGame
-        love.mouse.setGrabbed(Game.InHostedGame)
-        love.mouse.setVisible(not Game.InHostedGame)
+        Game.IsPaused = not Game.IsPaused
+        love.mouse.setGrabbed(not Game.IsPaused)
+        love.mouse.setVisible(Game.IsPaused)
+    end
+    if key == "g" then
+        LocalPlayer.Glide = not LocalPlayer.Glide
     end
 end
 
@@ -228,24 +337,23 @@ end
 
 
 
-
-
-
-function Shoot(dt, player, speed, Bullet_type)
-    local body = love.physics.newBody(world, player.x, player.y, "dynamic")
-    local fixture = love.physics.newFixture(body, Entities.defaultShapes.bullet, 1)
-    local angle = player.angle + math.random(-200, 200)*0.0001
-    fixture:setUserData("bullet")
-    fixture:setMask(player.number)
-    fixture:setCategory(player.number)
-    body:setBullet(true)
-    body:applyLinearImpulse(math.cos(angle) *speed , math.sin(angle) *speed)
-    Entities.list[body] = {body = body, fixture = fixture, angle = player.angle, player = player, life = 2}
+function love.filedropped(file )
+    local content = file:read() -- Read the entire contents of the file
+    if Game.IsLoading then
+            Game.IsJoining = 1
+            Game.Server.ipaddr = content
+    end
 end
 
+function IsMajorFrame()
+    -- return false
+    return math.fmod(math.random(1, 60), 60) == 0
+end
+
+
+
 function DestroyEntity(entity)
-    print(entity)
-    if entity ~= nil then 
+    if entity ~= nil then
         local body = entity.body
         Entities.list[body].body:destroy()  -- Destroy the body
         Entities.list[body] = nil           -- Remove the object from the table
@@ -253,12 +361,13 @@ function DestroyEntity(entity)
 end
 
 function beginContact(a, b, coll)
-    print ("colliding" , a:getUserData() , "with" , b:getUserData())
+    -- print ("colliding" , a:getUserData() , "with" , b:getUserData())
     Debug ="colliding" .. a:getUserData() .. "with" .. b:getUserData()
     -- Get userdata of the colliding objects
     local userdataA = a:getUserData()
     local userdataB = b:getUserData()
 
+    local bullet, other
     -- If one object is "deletable" and the other is not a "player"
     if userdataA == "bullet" or userdataB == "bullet" then
         if userdataA == "bullet" then
@@ -278,10 +387,26 @@ function beginContact(a, b, coll)
 end
 
 
-function JoinGame(ipaddr)
-    
-    LocalPlayer = Players.list[key]
-end
+-- function JoinGame()
+--     local ThreadScrpit = string.dump(Multiplayer.Thread)
+--     local MultplayerThread = love.thread.newThread(ThreadScrpit)
+--     MultplayerThread:start()
+--     Multiplayer.ThreadChannel = love.thread.getChannel("MultplayerThread")
+-- end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -316,7 +441,7 @@ end
 -- -- If the objects have been touching for less than 20 updates, add a count to the Text
 -- 		Text = Text.." "..Persisting
 -- 	end
-	
+
 -- -- Update the Persisting counter to keep track of how many updates the objects have been touching
 -- 	Persisting = Persisting + 1
 -- 	love.window.setTitle ("Persisting: "..Persisting)
