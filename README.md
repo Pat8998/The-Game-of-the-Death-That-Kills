@@ -21,5 +21,4 @@ https://github.com/love2d/megasource
 
  - make the bullets look realistic
  - do things when they collide walls
- - and add multiplayer (currently working on it in another branch)
  - Rework the drawing system to sort the objects accodingly to their position
