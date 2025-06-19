@@ -16,6 +16,7 @@ local Multiplayer = require("libs.multiplayer")
 local FFIutils = require("libs.FFIutils")
 local enet = require "enet"  --put it in global to call it from libraries ???
 local ffi = require("ffi")
+local json = require("libs.external.lunajson")
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
 local fps
 local WallsHeight = 2
@@ -31,6 +32,7 @@ local Game = {
     IsPublic = false,
     IsConnectedToHost = false,
     InMM = false, --For now pause menu is main menu but it'll change
+    IsJoining = 0,
     Server = nil,        --might have to move it somewhere else because Cannot send it th threads
     Clients = {},
     Debug = "debug",
@@ -40,6 +42,10 @@ local Game = {
         WallsChannel = 2,
     },       -- If I ever add another channel (for chat or smth) I have to up the number of channels in the connect (multiplayer.lua line 13)
 
+}
+local Server = {
+    ipaddr = "localhost:6789",
+    host = nil,
 }
 SharedStates = FFIutils.CreateSharedState(500, 500)
 local Players = {
@@ -81,7 +87,9 @@ function love.load()
         end),
         JoinGame = Button:new(screen_width/2 -100, 500, 200, 50, "Join Game", function ()
         Game.IsLoading = true
-        Multiplayer.JoinGame("localhost:6789", Game, SharedStates)
+        Server.ipaddr = "localhost:6789"
+        Game.IsJoining = 1
+        -- Multiplayer.JoinGame("localhost:6789", Game, SharedStates)
         end),
         SetPublic =  Button:new(screen_width/2 -100, 600, 200, 50, "SetPublic", function ()
             Game.IsPublic = true
@@ -171,7 +179,7 @@ function love.update(dt)
         Game.InHostedGame = false
         if Game.IsLoading then
             Multiplayer.ThreadChannel = Multiplayer.ThreadChannel or love.thread.getChannel("MultplayerThread")
-            InGame.UpdateWhileLoading(Multiplayer.ThreadChannel, Game)
+            InGame.UpdateWhileLoading(Multiplayer.ThreadChannel, Game, enet, json, Server)
         else
             UpdateMenu(dt)
         end
@@ -211,7 +219,9 @@ function love.update(dt)
             Map = Map,
             SharedStates = SharedStates,
             ffi = ffi,
-            FFIutils = FFIutils
+            FFIutils = FFIutils,
+            Server = Server,
+            json = json,
         })
         
     else
@@ -305,7 +315,8 @@ end
 function love.filedropped(file )
     local content = file:read() -- Read the entire contents of the file
     if Game.IsLoading then
-            Multiplayer.JoinGame(content, Game, SharedStates)
+            Game.IsJoining = 1
+            Server.ipaddr = content
     end
 end
 
