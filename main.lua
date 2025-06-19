@@ -103,9 +103,8 @@ function love.load()
         end),
         JoinGame = Button:new(screen_width/2 -100, 500, 200, 50, "Join Game", function ()
         Game.IsLoading = true
-        Game.Server.ipaddr = "localhost:6789"
-        Game.IsJoining = 1
-        -- Multiplayer.JoinGame("localhost:6789", Game, SharedStates)
+        --Game.Server.ipaddr = "localhost:6789"
+        --Game.IsJoining = 1
         end),
         SetPublic =  Button:new(screen_width/2 -100, 600, 200, 50, "SetPublic", function ()
             Game.IsPublic = true
