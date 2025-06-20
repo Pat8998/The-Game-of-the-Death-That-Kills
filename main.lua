@@ -108,7 +108,7 @@ function love.load()
             Game.IsPublic = true
             -- love.thread.newThread(string.dump(Multiplayer.StartServer)):start(Game)
             --ABOVE LINE IF ANY LAG IS CAUSED WITHOUT THE THREAD
-            Game.Server.host = Multiplayer.StartServer("*:6789", Game.enetChannels.amount)
+            Game.Server.host = Multiplayer.StartServer("*:6969", Game.enetChannels.amount)
             Buttons.SetPublic.isActive = false
             Buttons.StopServer.isActive = true
         end),
