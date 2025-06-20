@@ -65,7 +65,7 @@ function Multiplayer.ServerReceive (dt, players, Channels, Player, Game)
     --         end
     --     end
     -- end
-    local event = Game.Server.host:service()
+    local event = Game.Server.host:service()  
     while event do
         if event.type == "connect" then
             print("A client connected from", event.peer)

@@ -36,6 +36,7 @@ local Game = {
         ipaddr = "localhost:6789",
         host = nil,
         peer = nil,  --peer is the connection to the host
+        ReceiveTimeout = 100, --time to wait for the host to respond
     }   ,        --might have to move it somewhere else because Cannot send it th threads
     Clients = {},
     IsMajorFrame = false, -- If the game is in a major frame (update what neeed ds to be updated)
@@ -107,7 +108,7 @@ function love.load()
             Game.IsPublic = true
             -- love.thread.newThread(string.dump(Multiplayer.StartServer)):start(Game)
             --ABOVE LINE IF ANY LAG IS CAUSED WITHOUT THE THREAD
-            Game.Server.host = Multiplayer.StartServer("localhost:6789", Game.enetChannels.amount)
+            Game.Server.host = Multiplayer.StartServer("*:6789", Game.enetChannels.amount)
             Buttons.SetPublic.isActive = false
             Buttons.StopServer.isActive = true
         end),
@@ -243,7 +244,6 @@ function love.update(dt)
     else
         Game.IsPaused = true
     end
-    Game.debug = "Debug :" .. tostring(Game.Debug)
 end
 
 

@@ -154,14 +154,14 @@ function InGame.UpdateWhileLoading( params)
     --             Game.InClientGame = true
     --         end
     --     end
-        print("Game.IsJoining: ", Game.IsJoining)
+        -- print("Game.IsJoining: ", Game.IsJoining)
         if Game.IsJoining == 1 then
             Game.Server.host = enet.host_create()
             Game.Server.peer = Game.Server.host:connect(Game.Server.ipaddr, Game.enetChannels.amount)  --3 is the number of channels. add more if needed
             print("Connecting to server at " .. Game.Server.ipaddr, "with", Game.enetChannels.amount, "channels")
             Game.IsJoining = 2
         elseif Game.IsJoining == 2 then
-            local event = Game.Server.host:service(0)
+            local event = Game.Server.host:service()        -- No delay bc we can wait a frame it's ok
             if event then
                 if event.type == "connect" then
                     print("Connected to server!")
@@ -170,7 +170,7 @@ function InGame.UpdateWhileLoading( params)
                 end
             end
         elseif Game.IsJoining == 3 then        
-        local event = Game.Server.host:service(100)
+        local event = Game.Server.host:service()
         if event then
             if event.type == "receive" then
                 if event.channel == Game.enetChannels.NumberChannel then
@@ -248,7 +248,7 @@ function InGame.updateClient(params)
         elseif love.keyboard.isDown("q") then
             dir = dir + math.pi / 2
         end
-        Game.Debug = "Speed : " .. localplayer.moveSpeed .. " | Angle: " .. localplayer.angle * 180 / math.pi .. "°"
+        
 
         Client.Move(dir, localplayer, Game)
     end
@@ -266,13 +266,9 @@ function InGame.updateClient(params)
     end
 
     do
-        local event = Game.Server.host:service()
+        local event = Game.Server.host:service(Game.Server.ReceiveTimeout)
         while Game.Server.host:check_events() do
-            event = Game.Server.host:check_events(0)
-            if not event == Game.Server.host.service then
-                print("Error: No event received from host")
-            end
-            event = Game.Server.host:service(0)
+            event = Game.Server.host:service()          --No delay 
         end
 
         if event then
@@ -317,7 +313,7 @@ function InGame.updateClient(params)
                     end
                     print("Received walls from server, count: ", #Map.walls.list)
                     repeat
-                        event = Game.Server.host:service(100)
+                        event = Game.Server.host:service(Game.Server.ReceiveTimeout)
                     until event.channel == Game.enetChannels.EntityChannel and event.type == "receive"
                     local data = json.decode(event.data)
                     for i, obj in ipairs(data) do
@@ -355,6 +351,9 @@ function InGame.updateClient(params)
                 print(event.type, event.peer, event.data)
             end
             
+            Game.Debug = "Event this frame : yep"
+        else
+            Game.Debug = "Event this frame : nope"
         end
     end
 
