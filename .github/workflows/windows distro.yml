@@ -34,6 +34,15 @@ jobs:
         run: |
           echo Add other actions to build,
           echo test, and deploy your project.
-          
-      - name: Love actions for Windows
-        uses: love-actions/love-actions-windows@v1.1.3
+          - name: Build Windows packages
+            id: build-packages
+            uses: love-action/love-actions-windows@v1
+            with:
+              love-package: ./Tgotdtk.love
+              icon-path: ./assets/windows/icon.ico
+              rc-path: ./assets/windows/template.rc
+              product-name: love_app
+              app-id: ${{ secrets.APP_ID }}
+              product-website: https://www.example.com
+              installer-languages: English.isl ChineseSimplified.isl
+              output-folder: "./dist"
