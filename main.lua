@@ -60,6 +60,7 @@ local Game = {
         body:applyLinearImpulse(math.cos(angle) *speed , math.sin(angle) *speed)
         Entities.list[body] = {body = body, fixture = fixture, angle = player.angle, player = player, life = 2}
 end,
+    Buttons = {},  -- Buttons table to hold all buttons
 
 }
 local Players = {
@@ -86,7 +87,7 @@ function love.load()
     love.window.setMode(1920, 1080, {fullscreen = false})
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
     local screen_width, screen_height = love.graphics.getWidth(), love.graphics.getHeight()
-    Buttons = {
+    Game.Buttons = {
         Quit = Button:new(screen_width/2 -100, 200, 200, 50, "Quit", function()
             love.event.quit()
         end),
@@ -109,8 +110,8 @@ function love.load()
             -- love.thread.newThread(string.dump(Multiplayer.StartServer)):start(Game)
             --ABOVE LINE IF ANY LAG IS CAUSED WITHOUT THE THREAD
             Game.Server.host = Multiplayer.StartServer("*:6969", Game.enetChannels.amount)
-            Buttons.SetPublic.isActive = false
-            Buttons.StopServer.isActive = true
+            Game.Buttons.SetPublic.isActive = false
+            Game.Buttons.StopServer.isActive = true
         end),
         StopServer = Button:new(screen_width/2 -100, 700, 200, 50, "StopServer", function ()
             Game.IsPublic = false
@@ -118,9 +119,39 @@ function love.load()
             --ABOVE LINES IF ANY LAG IS CAUSED WITHOUT THE THREAD
             Game.Server.host = Game.Server.host:destroy()
             print("Server stopped")
-            Buttons.SetPublic.isActive = true
-            Buttons.StopServer.isActive = false
-        end, {isActive = false})
+            Game.Buttons.SetPublic.isActive = true
+            Game.Buttons.StopServer.isActive = false
+        end, {isActive = false}),
+        ClientResume = Button:new(screen_width/2 -100, 300, 200, 50, "Resume", function ()
+            Game.IsPaused = false
+        end, {isActive = false}),
+        ClientDisconnect = Button:new(screen_width/2 -100, 500, 200, 50, "Disconnect", function ()
+            Game.Server.peer:disconnect()
+            repeat
+                print("Waiting for disconnection...", Game.Server.peer:state())
+                Game.Server.host:service(100)  -- Ensure all messages are sent
+            until Game.Server.peer:state() == "disconnected"
+            InGame.CreateLocalGame({
+                world = world,
+                Game = Game,
+                Players = Players,
+                Entities = Entities,
+                Player = Player,
+                Map = Map
+            })
+            LocalPlayer = Players.list[1]-- Create the local player and the walls
+            Game.InClientGame = false
+            Game.Buttons.ClientResume.isActive = false
+            Game.Buttons.ClientDisconnect.isActive = false
+            Game.Buttons.StartGame.isActive = true
+            Game.Buttons.JoinGame.x = love.graphics.getWidth()/2 +110            -- ACTUALLY IT MAKES YOU CLICK ON JOIN  without
+            Game.Buttons.JoinGame.isActive = true
+            Game.Buttons.SetPublic.isActive = true
+            Game.Buttons.StopServer.isActive = false
+
+        end, {isActive = false}),
+
+
     }
 
     
@@ -146,34 +177,26 @@ function love.load()
 
 
 
-    love.physics.setMeter(64)
-    world = love.physics.newWorld(0, 0, true)
-	world:setCallbacks(beginContact, endContact, preSolve, postSolve)
+
     Entities = {defaultShapes = {
         point = love.physics.newEdgeShape(0, 0, 0, 0),
         bullet = love.physics.newCircleShape(1)
     }, list = {}}
 
-    Map.walls.list = Walls.default
-    for key, Wall in pairs(Map.walls.list) do
-        Wall.body = love.physics.newBody(world, Wall.pos[1][1], Wall.pos[1][2], "static")        -- Create the body at the first point of the wall
-        -- Adjust the shape coordinates relative to the body's position
-        local x1, y1 = 0, 0  -- Relative to Wall.body's position (Wall.pos[1])
-        local x2, y2 = Wall.pos[2][1] - Wall.pos[1][1], Wall.pos[2][2] - Wall.pos[1][2]
-        -- Create the shape with corrected coordinates
-        Wall.shape = love.physics.newEdgeShape(x1, y1, x2, y2)
-        -- Attach the shape to the body
-        Wall.fixture = love.physics.newFixture(Wall.body, Wall.shape, 1)
-        Wall.fixture:setUserData("wall" .. key)
-        Wall.fixture:setCategory(16)
-    end
 
-    -- for players = palyers.number
-    for i = 1, Players.number do
-        table.insert(Players.list, Player.createPlayer(i, world))
-        -- Players.list[i]s [Players.list[i].number] = Players.list[i]
-    end
-    LocalPlayer = Players.list[1]
+    love.physics.setMeter(64)
+    world = love.physics.newWorld(0, 0, true)
+	world:setCallbacks(beginContact, endContact, preSolve, postSolve)
+
+    InGame.CreateLocalGame({
+        world = world,
+        Game = Game,
+        Players = Players,
+        Entities = Entities,
+        Player = Player,
+        Map = Map
+    })
+    LocalPlayer = Players.list[1]-- Create the local player and the walls
 
 
     -- Channels.InputCommuncicationChannel = love.thread.getChannel("InputServerThread")
@@ -200,7 +223,7 @@ function love.update(dt)
                 localplayer = LocalPlayer,
             })
         else
-            UpdateMenu(dt)
+            InGame.UpdateMenu(dt, Game, mouse)
         end
     elseif not Game.InClientGame and not Game.InMM then
         Game.InHostedGame = true
@@ -240,18 +263,14 @@ function love.update(dt)
             Players = Players,
             Client = Client
         })
-        
+        Game.Debug = "Peer state: " .. Game.Server.peer:state() .. "\n"
     else
         Game.IsPaused = true
     end
+    
 end
 
 
-function UpdateMenu(dt)
-    for key, button in pairs(Buttons) do
-        button:update(mouse.x, mouse.y, mouse.lb)
-    end
-end
 
 
 
@@ -261,7 +280,7 @@ end
 
 function love.draw()
     local large_sreen_width = 2*math.pi*love.graphics.getWidth()/LocalPlayer.fov
-    if Game.InHostedGame or Game.InClientGame then
+    if Game.InHostedGame or Game.InClientGame and not Game.IsPaused then
         Draw.InGame({
             player = LocalPlayer,                         -- your player table
             fps = fps,                               -- your current FPS value
@@ -298,7 +317,7 @@ function love.draw()
         love.graphics.setShader(blurShader)
         love.graphics.draw(InGameCanvas, 0, 0)
         love.graphics.setShader()  -- Reset shader for further drawing
-        Draw:Menu(Buttons)
+        Draw:Menu(Game.Buttons)
     end
 end
 

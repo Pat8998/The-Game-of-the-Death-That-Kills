@@ -10,8 +10,8 @@ end
 
 function Draw.LoadingScreen()
     love.graphics.print("DROP FILE", 500, 500)
-    love.graphics.setBackgroundColor(0.2, 0.2, 0.9, 1)
     --Spin a Circle ??
+    love.graphics.setBackgroundColor(0.2, 0.2, 0.9, 1)
 end
 
 function Draw.InGame(params)
