@@ -139,8 +139,23 @@ function Draw.InGame(params)
         end
         love.graphics.rectangle("fill", screen_pos.x, screen_pos.y, 0.4 * screen_width / (dist), 0.8 * screen_height / dist)
     end
+    HUD(
+        player
+    )
 end
 
+function HUD(LocalPlayer)
+    local size = 1
+    --LIFEBAR
+    love.graphics.setColor(1, 0, 0, 1)
+    love.graphics.rectangle("fill", 20, love.graphics.getHeight() - 30, size * love.graphics.getWidth() / 10, 20)
+    love.graphics.setColor(0, 1, 0, 1)
+    love.graphics.rectangle("fill", 21, love.graphics.getHeight() - 29, (LocalPlayer.Health / LocalPlayer.maxHealth) * love.graphics.getWidth() / 10 -2 , 18)
+    love.graphics.setColor(math.abs(LocalPlayer.Health / LocalPlayer.maxHealth - 1), LocalPlayer.Health / LocalPlayer.maxHealth, 0, 1)
+    love.graphics.print(tostring(LocalPlayer.Health), size * love.graphics.getWidth() / 10 + 30, love.graphics.getHeight() -27)
+    
+    
+end
 
 function SortWalls(walls, player)
     -- table.sort(walls, function(a, b)

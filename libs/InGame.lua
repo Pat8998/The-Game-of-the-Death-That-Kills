@@ -116,6 +116,10 @@ function InGame.updateHost(params)
     world:update(dt)
     for _, p in ipairs(players.list) do
         p.x, p.y = p.body:getPosition()
+        if p.Health <= 0 then
+            p.Health = p.maxHealth
+            p.body:setPosition(0, 150)
+        end
         -- p.angle = p.body:getAngle()
     end
     for _, e in pairs(Entities.list) do
@@ -317,10 +321,14 @@ function InGame.updateClient(params)
                             type = "player",  -- Assuming 2 is for Player
                             angle = obj.angle or 0,
                             number = obj.number or 0,
+                            --PLEASE I'd LIKE TO COPY EVERYTHING SO IT WONT BE AWfEFUL -> CLIENT PLAYER CREATE?
+                            life = obj.life or 50,
+                            weapon = obj.weapon or 'default'
                         }
                         if obj.number == localplayer.number then
                             localplayer.x = obj.x
                             localplayer.y = obj.y
+                            localplayer.Health = obj.Health or 50
                         end
                     end
 

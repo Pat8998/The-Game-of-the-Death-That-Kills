@@ -84,7 +84,8 @@ local Buttons = {}
 -- initialization
 function love.load()
     love.window.setTitle("Title")
-    love.window.setMode(1920, 1080, {fullscreen = false})
+    love.window.setFullscreen(true)
+    love.window.setMode(love.graphics.getWidth(), love.graphics.getHeight(), {fullscreen = false})
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
     local screen_width, screen_height = love.graphics.getWidth(), love.graphics.getHeight()
     Game.Buttons = {
@@ -342,6 +343,11 @@ function love.keypressed(key)
     if key == "g" then
         LocalPlayer.Glide = not LocalPlayer.Glide
     end
+    if key == "kp+" then
+        LocalPlayer.Health = LocalPlayer.Health + 1
+    elseif key == 'kp-' then
+        LocalPlayer.Health = LocalPlayer.Health - 1
+    end
 end
 
 
@@ -392,6 +398,13 @@ function beginContact(a, b, coll)
         end
         if other:getUserData() == "player" or other:getUserData() == "mob" then
             --ADD THZE PLAYER HEALTHE SYSTEM LOLLL
+            for key, value in pairs(Players.list) do
+                if value.fixture == other then
+                    value.Health = value.Health - 10
+                    break
+                end
+                -- print(value.fixture, other)
+            end
         elseif other:getUserData():match("^wall") then
             --idk put an effect on the wall or smth
         end

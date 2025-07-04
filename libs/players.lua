@@ -16,6 +16,8 @@ function Player.createPlayer(number, world, peer)  --define xy angle but like im
         Glide = false,
         moveSpeed = 0,
         shape = love.physics.newCircleShape(2),
+        Health = 100,
+        maxHealth = 100
     }
     player.body = love.physics.newBody(world,player.x,player.y,"dynamic")
     player.fixture = love.physics.newFixture(player.body, player.shape, 1)

@@ -31,7 +31,8 @@ function Multiplayer.ServerSend (Game, players, Entities, Walls)     --additionn
             x = p.x,
             y = p.y,
             number = p.number,
-            angle = p.angle
+            angle = p.angle,
+            Health = p.Health
         })
     end
     -- print("Sending data", json.encode(data))
