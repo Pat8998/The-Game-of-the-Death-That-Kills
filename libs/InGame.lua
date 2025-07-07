@@ -91,17 +91,17 @@ function InGame.updateHost(params)
     end
 
     if mouse.lb then
-        Game.Shoot(dt, player, 0.1, "default")
+        Game.Weapons.Shoot(player, Entities)
     end
     
     
-    Game.Debug = "Speed : " .. player.moveSpeed .. " | Angle: " .. player.angle * 180 / math.pi .. "°"
+    Game.Debug = player.weapon.name
 
 
 
     --update othe players
     if Game.IsPublic then
-        Multiplayer.ServerReceive(dt, players, Channels, Player, Game)
+        Multiplayer.ServerReceive(dt, players, Channels, Player, Game, Entities)
         for _, p in ipairs(players.list) do
             if p.peer ~= "local" then
                 p.body:setLinearVelocity(
@@ -297,7 +297,6 @@ function InGame.updateClient(params)
         while Game.Server.host:check_events() do
             event = Game.Server.host:service()          --No delay 
         end
-
         if event then
             if event.type == "receive" then
                 if event.channel == Game.enetChannels.EntityChannel then
@@ -342,7 +341,7 @@ function InGame.updateClient(params)
                             pos = obj.pos,
                         }
                     end
-                    print("Received walls from server, count: ", #Map.walls.list)
+                    --print("Received walls from server, count: ", #Map.walls.list)
                     repeat
                         event = Game.Server.host:service(Game.Server.ReceiveTimeout)
                     until event.channel == Game.enetChannels.EntityChannel and event.type == "receive"
@@ -387,6 +386,7 @@ function InGame.updateClient(params)
             Game.Debug = "Event this frame : yep"
         else
             Game.Debug = "Event this frame : nope"
+            print( love.timer.getTime(),"No event this frame")
         end
     end
 end

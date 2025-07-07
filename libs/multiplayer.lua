@@ -52,7 +52,7 @@ function Multiplayer.ServerSend (Game, players, Entities, Walls)     --additionn
 end
 
 
-function Multiplayer.ServerReceive (dt, players, Channels, Player, Game)
+function Multiplayer.ServerReceive (dt, players, Channels, Player, Game, Entities)
     -- for index, player in ipairs(players.list) do
     --     if player.peer ~= "local" then
     --         local event = player.peer:receive()
@@ -132,7 +132,7 @@ function Multiplayer.ServerReceive (dt, players, Channels, Player, Game)
                                 break
                             end
                         end
-                        Game.Shoot(dt, event.player, 0.1, data.weapon)  -- Call the shoot function with the player and weapon type
+                        Game.Weapons.Shoot(event.player, Entities)  -- Call the shoot function with the player and weapon type
                         -- Handle shooting logic here
                     end
                 end

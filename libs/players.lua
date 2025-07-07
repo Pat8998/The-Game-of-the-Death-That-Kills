@@ -1,3 +1,4 @@
+local Weapons = require "libs.weapons"
 local Player = {}
 
 function Player.createPlayer(number, world, peer)  --define xy angle but like im lazy
@@ -17,7 +18,9 @@ function Player.createPlayer(number, world, peer)  --define xy angle but like im
         moveSpeed = 0,
         shape = love.physics.newCircleShape(2),
         Health = 100,
-        maxHealth = 100
+        maxHealth = 100,
+        NextShoot = 0.1,
+        weapon = Weapons.list.Default,  -- Default weapon
     }
     player.body = love.physics.newBody(world,player.x,player.y,"dynamic")
     player.fixture = love.physics.newFixture(player.body, player.shape, 1)

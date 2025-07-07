@@ -14,6 +14,7 @@ local Walls = require("libs.walls")
 local Player = require("libs.players")
 local Multiplayer = require("libs.multiplayer")
 local Client = require("libs.client")
+local Weapons = require("libs.weapons")
 local enet = require "enet"  --put it in global to call it from libraries ???
 local json = require("libs.external.lunajson")
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
@@ -49,17 +50,18 @@ local Game = {
 
         amount = 4,  -- Number of channels used in the game
     },       -- If I ever add another channel (for chat or smth) I have to up the number of channels in the connect (multiplayer.lua line 13)
-    Shoot = function (dt, player, speed, Bullet_type)
-        local body = love.physics.newBody(world, player.x, player.y, "dynamic")
-        local fixture = love.physics.newFixture(body, Entities.defaultShapes.bullet, 1)
-        local angle = player.angle + math.random(-200, 200)*0.0001
-        fixture:setUserData("bullet")
-        fixture:setMask(player.number)
-        fixture:setCategory(player.number)
-        body:setBullet(true)
-        body:applyLinearImpulse(math.cos(angle) *speed , math.sin(angle) *speed)
-        Entities.list[body] = {body = body, fixture = fixture, angle = player.angle, player = player, life = 2}
-end,
+--     Shoot = function (dt, player, speed, Bullet_type)
+--         local body = love.physics.newBody(world, player.x, player.y, "dynamic")
+--         local fixture = love.physics.newFixture(body, Entities.defaultShapes.bullet, 1)
+--         local angle = player.angle + math.random(-200, 200)*0.0001
+--         fixture:setUserData("bullet")
+--         fixture:setMask(player.number)
+--         fixture:setCategory(player.number)
+--         body:setBullet(true)
+--         body:applyLinearImpulse(math.cos(angle) *speed , math.sin(angle) *speed)
+--         Entities.list[body] = {body = body, fixture = fixture, angle = player.angle, player = player, life = 2}
+-- end,
+    Weapons = Weapons,  -- Weapons module
     Buttons = {},  -- Buttons table to hold all buttons
 
 }
@@ -237,7 +239,6 @@ function love.update(dt)
             dmouse = dmouse,                -- dmouse table (must contain dmouse.x)
             mouse = mouse,                  -- mouse table (must contain x, y, lb, etc.)
             world = world,                  -- physics world
-            Shoot = Shoot,                  -- Shoot function
             Entities = Entities,            -- Entities table with Entities.list
             DestroyEntity = DestroyEntity,   -- function to destroy an entity
             Multiplayer = Multiplayer,
@@ -264,11 +265,9 @@ function love.update(dt)
             Players = Players,
             Client = Client
         })
-        Game.Debug = "Peer state: " .. Game.Server.peer:state() .. "\n"
     else
         Game.IsPaused = true
     end
-    
 end
 
 
@@ -350,6 +349,13 @@ function love.keypressed(key)
     end
 end
 
+function love.wheelmoved(x, y)
+    if y > 0 then
+        Weapons.nextWeapon(LocalPlayer)
+    else
+        Weapons.previousWeapon(LocalPlayer)
+    end
+end
 
 
 
@@ -448,36 +454,6 @@ end
 function postSolve(a, b, coll, normalImpulse1, tangentImpulse1, normalImpulse2, tangentImpulse2)
     -- print("Post Solve Contact")
 end
--- function endContact(a, b, coll)
--- 	Persisting = 0
--- 	local textA = a:getUserData()
--- 	local textB = b:getUserData()
--- -- Update the Text to indicate that the objects are no longer colliding
--- 	Text = Text.."\n 3.)" .. textA.." uncolliding with "..textB
--- 	love.window.setTitle ("Persisting: "..Persisting)
--- end
-
--- function preSolve(a, b, coll)
--- 	if Persisting == 1 then
--- 	local textA = a:getUserData()
--- 	local textB = b:getUserData()
--- -- If this is the first update where the objects are touching, add a message to the Text
--- 		Text = Text.."\n 2.)" .. textA.." touching "..textB..": "..Persisting
--- 	elseif Persisting <= 10 then
--- -- If the objects have been touching for less than 20 updates, add a count to the Text
--- 		Text = Text.." "..Persisting
--- 	end
-
--- -- Update the Persisting counter to keep track of how many updates the objects have been touching
--- 	Persisting = Persisting + 1
--- 	love.window.setTitle ("Persisting: "..Persisting)
--- end
-
--- function postSolve(a, b, coll, normalimpulse, tangentimpulse)
--- -- This function is empty, no actions are performed after the collision resolution
--- -- It can be used to gather additional information or perform post-collision calculations if needed
--- end
-
 --RATHER THAN ADJUSTING THE ANGLES
 --HOW ABOUT I ADJUST SCREEN POSITIONNING
 --SO WHEN ITS LIKE OVER 360 * width /FOV = large_sreen_width
