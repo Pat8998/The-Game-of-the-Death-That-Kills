@@ -75,9 +75,14 @@ local Channels = {
     GameChannel = nil
 }
 local LocalPlayer = Players.list[0]
-local BackgroundImage = love.graphics.newImage('ayakaka.png')
 local Buttons = {}
-
+local Textures = {
+    wallTexture = love.graphics.newImage("assets/wall.png"),
+    -- playerTexture = love.graphics.newImage("assets/player.png"),
+    -- bulletTexture = love.graphics.newImage("assets/bullet.png"),
+    -- crosshairTexture = love.graphics.newImage("assets/crosshair.png"),
+    ayakakaTexture = love.graphics.newImage("assets/ayakaka.png")
+}
 --canvas is great
 --color mask for color
 
@@ -282,6 +287,7 @@ function love.draw()
     local large_sreen_width = 2*math.pi*love.graphics.getWidth()/LocalPlayer.fov
     if Game.InHostedGame or Game.InClientGame and not Game.IsPaused then
         Draw.InGame({
+            Textures = Textures,                     -- your textures table
             player = LocalPlayer,                         -- your player table
             fps = fps,                               -- your current FPS value
             Game = Game,                           -- your debug text/variable
@@ -301,6 +307,7 @@ function love.draw()
         love.graphics.setCanvas()            -- Reset to the default screen
         InGameCanvas:renderTo(function ()
             Draw.InGame({
+                Textures = Textures,  -- your textures table
                 player = LocalPlayer,                         -- your player table
                 fps = fps,                               -- your current FPS value
                 Game = Game,                           -- your debug text/variable
@@ -329,7 +336,7 @@ function love.keypressed(key)
         love.window.close()
     end
     if key == "c" then
-        love.mouse.setCursor(love.mouse.newCursor("ayakaka.png", 0, 0))
+        love.mouse.setCursor(love.mouse.newCursor("assets.ayakaka.png", 0, 0))
     end
     if key == "lalt" then
         love.mouse.setPosition(love.graphics.getWidth()/2, love.graphics.getHeight()/2)

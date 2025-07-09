@@ -17,6 +17,7 @@ end
 function Draw.InGame(params)
 
     -- Extract variables from the passed table
+    local Textures          = params.Textures
     local player            = params.player
     local fps               = params.fps
     local Game             = params.Game
@@ -86,6 +87,19 @@ function Draw.InGame(params)
         love.graphics.polygon('fill', vertices)
         love.graphics.setColor(197/255, 49/255, 150/255)
         love.graphics.polygon('line', vertices)
+
+        vertices = {
+            { vertices[0], vertices[1], 0, 0 },
+            { vertices[2], vertices[3], 0, 1 },
+            { vertices[4], vertices[5], 1, 1 },
+            { vertices[6], vertices[7], 1, 0 }
+        }
+        local mesh = love.graphics.newMesh(vertices, "fan")
+        mesh:setTexture(Textures.wallTexture)
+        love.graphics.draw(mesh)
+
+
+
 
         -- Draw the minimap line for the wall
         love.graphics.line(value.pos[1][1] + 25, -value.pos[1][2] + 200, value.pos[2][1] + 25, -value.pos[2][2] + 200)
