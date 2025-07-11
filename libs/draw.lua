@@ -89,13 +89,13 @@ function Draw.InGame(params)
         love.graphics.polygon('line', vertices)
 
         vertices = {
-            { vertices[0], vertices[1], 0, 0 },
-            { vertices[2], vertices[3], 0, 1 },
-            { vertices[4], vertices[5], 1, 1 },
-            { vertices[6], vertices[7], 1, 0 }
+            { vertices[1], vertices[2], 0, 0 },
+            { vertices[3], vertices[4], 0, 1 },
+            { vertices[5], vertices[6], 1, 1 },
+            { vertices[7], vertices[8], 1, 0 }
         }
-        local mesh = love.graphics.newMesh(vertices, "fan")
-        mesh:setTexture(Textures.wallTexture)
+        local mesh = love.graphics.newMesh(vertices)
+        mesh:setTexture(Textures.wallTexture, "fan")
         love.graphics.draw(mesh)
 
 
