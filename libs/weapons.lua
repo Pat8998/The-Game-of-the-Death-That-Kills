@@ -18,7 +18,7 @@ Weapons.list = {
         speed = 2,
         spread = 15*math.pi / 180,  -- Spread in rads
         damage = 20,
-        bullets = function() return 3 + math.random(2) end,  -- Number of bullets shot at once
+        bullets = function() return 2 + math.random(3) end,  -- Number of bullets shot at once
     },
     Rifle = {
         name = "Rifle",
@@ -69,7 +69,7 @@ function Weapons.Shoot(player, Entities, weapon)
     weapon = weapon or player.weapon or Weapons.list.Default  -- Use player's weapon or default if not specified
     if love.timer.getTime() > player.NextShoot then
         local bullets = (type(weapon.bullets) == "function" and weapon.bullets() or weapon.bullets) or 1  -- Call function if present
-        print(bullets)
+        -- print(bullets)
         repeat
             local body = love.physics.newBody(world, player.x, player.y, "dynamic")
             local fixture = love.physics.newFixture(body, Entities.defaultShapes.bullet, 1)

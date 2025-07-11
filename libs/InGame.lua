@@ -94,8 +94,22 @@ function InGame.updateHost(params)
         Game.Weapons.Shoot(player, Entities)
     end
     
-    
-    Game.Debug = player.weapon.name
+    do
+        local coucou = ""
+        if Game.InHostedGame then 
+            local     x1, y1 = player.body:getPosition()
+            local     x2, y2 = x1 + math.cos(player.angle) * 1000, y1 + math.sin(player.angle) * 1000
+                world:rayCast(x1, y1, x2, y2,
+                    function(fixture, hitX, hitY, normalX, normalY, fraction)
+                        coucou ="Hit fixture with userdata:" .. fixture:getUserData() .. "\n"
+                        return 1 -- Stop at the first hit
+                    end
+                )
+        else
+            coucou = "Not in hosted game"
+        end
+        Game.Debug = player.weapon.name .. "\n \n" .. coucou
+    end
 
 
 

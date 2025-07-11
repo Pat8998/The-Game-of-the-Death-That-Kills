@@ -89,10 +89,14 @@ function Draw.InGame(params)
         love.graphics.polygon('line', vertices)
 
         vertices = {
-            { vertices[1], vertices[2], 0, 0 },
-            { vertices[3], vertices[4], 0, 1 },
-            { vertices[5], vertices[6], 1, 1 },
-            { vertices[7], vertices[8], 1, 0 }
+            -- { vertices[1], vertices[2], 0, 0 },
+            -- { vertices[3], vertices[4], 0, 1 },
+            -- { vertices[5], vertices[6], 1, 1 },
+            -- { vertices[7], vertices[8], 1, 0 }
+            { vertices[1], vertices[2], 0, 1 },
+            { vertices[3], vertices[4], 0, 0 },
+            { vertices[5], vertices[6], 1, 0 },
+            { vertices[7], vertices[8], 1, 1 }
         }
         local mesh = love.graphics.newMesh(vertices)
         mesh:setTexture(Textures.wallTexture, "fan")
@@ -151,7 +155,9 @@ function Draw.InGame(params)
         elseif screen_pos.x < -large_sreen_width + screen_width then
             screen_pos.x = screen_pos.x + large_sreen_width
         end
-        love.graphics.rectangle("fill", screen_pos.x, screen_pos.y, 0.4 * screen_width / (dist), 0.8 * screen_height / dist)
+        -- local w, h = otherplayer.shape:getRadius() * 2, otherplayer.shape:getRadius() * 2
+        local w, h = 2 * (math.atan(2/dist) * screen_width) / player.fov, 5 * screen_height / dist        --so far radius =2
+        love.graphics.rectangle("fill", screen_pos.x - w/2 , screen_pos.y - h/2, w, h)
     end
     HUD(
         player
