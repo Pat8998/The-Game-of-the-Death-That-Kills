@@ -19,8 +19,8 @@ https://github.com/love2d/megasource
 
 ## To Do List :
 
- - Rework the drawing system to sort the objects accodingly to their position
+ - fix the jittering of the walls (duplicated walls I can't seem to be able to detect)
  - make the bullets look realistic
  - do things when they collide walls
- - texture walls
+ - texture walls (I mean put real textures cause right now they're ugly)
  - Do the 3D i a shader (not sure if that's possible)
