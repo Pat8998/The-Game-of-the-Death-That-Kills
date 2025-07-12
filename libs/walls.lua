@@ -1,4 +1,6 @@
 Walls = {}
+local Textures = require('libs.textures')
+print(Textures.wallTexture)
 
 Walls.default = {{pos = {{0, 0}, {10, 0}}},
 {pos = {{10, 10}, {0, 10}}},
@@ -207,7 +209,6 @@ Walls.default = {{pos = {{0, 0}, {10, 0}}},
     -- {{200,200}, {100, 200}},
     -- {{200,200}, {200, 100}
 }
-Walls.list = Walls.default
 
 function Walls:clear(walllist)
     for _, wall in ipairs(walllist) do
@@ -220,7 +221,6 @@ function Walls:clear(walllist)
 end
 
 function Walls:generate(seed)
-    Walls.list = {}
     local maze = {}
     local stack = {}
     local cellSize = 10
@@ -283,16 +283,16 @@ function Walls:generate(seed)
                 local x2, y2 = x1 + cellSize, y1 + cellSize
 
                 if cell.walls[1] then
-                    table.insert(walls, {{x1, y1}, {x2, y1}}) -- top
+                    table.insert(walls, {pos = {{x1, y1}, {x2, y1}}}) -- top
                 end
                 if cell.walls[2] then
-                    table.insert(walls, {{x2, y1}, {x2, y2}}) -- right
+                    table.insert(walls, {pos = {{x2, y1}, {x2, y2}}}) -- right
                 end
                 if cell.walls[3] then
-                    table.insert(walls, {{x2, y2}, {x1, y2}}) -- bottom
+                    table.insert(walls, {pos = {{x2, y2}, {x1, y2}}}) -- bottom
                 end
                 if cell.walls[4] then
-                    table.insert(walls, {{x1, y2}, {x1, y1}}) -- left
+                    table.insert(walls, {pos = {{x1, y2}, {x1, y1}}}) -- left
                 end
             end
         end
@@ -345,24 +345,37 @@ function Walls:generate(seed)
 
 
     generateWallsList()
+    return Walls.setLocal(walls)
+end
+
+
+function Walls.setLocal(walls)
+    local walllist = {}
     for _, wall in ipairs(walls) do
-            wall.body = love.physics.newBody(world, wall[1][1], wall[1][2], "static")        -- Create the body at the first point of the wall
+        -- print(world, wall.pos[1][1], wall.pos[1][2], wall.pos[2][1], wall.pos[2][2])
+            wall.body = love.physics.newBody(world, wall.pos[1][1], wall.pos[1][2], "static")        -- Create the body at the first point of the wall
             -- Adjust the shape coordinates relative to the body's position
             local x1, y1 = 0, 0  -- Relative to Wall.body's position (Wall.pos[1])
-            local x2, y2 = wall[2][1] - wall[1][1], wall[2][2] - wall[1][2]
+            local x2, y2 = wall.pos[2][1] - wall.pos[1][1], wall.pos[2][2] - wall.pos[1][2]
             -- Create the shape with corrected coordinates
             wall.shape = love.physics.newEdgeShape(x1, y1, x2, y2)
             -- Attach the shape to the body
             wall.fixture = love.physics.newFixture(wall.body, wall.shape, 1)
             wall.fixture:setUserData("wall" .. _)
             wall.fixture:setCategory(16)
-
-            table.insert(Walls.list, {pos = {{wall[1][1], wall[1][2]}, {wall[2][1], wall[2][2]}}, body = wall.body, shape = wall.shape, fixture = wall.fixture})
+            
+            wall.mesh = love.graphics.newMesh({
+                { 10, 10, 0, 1 },
+            { 10 * wall.pos[1][1], 10 * wall.pos[1][2], 0, 0 },
+            { 10 * wall.pos[2][1], 10 * wall.pos[2][2], 1, 0 },
+            { love.graphics.getWidth() - 10, love.graphics.getHeight() - 10, 1, 1 }
+        })
+        wall.mesh:setTexture(Textures.wallTexture, "fan")
+            table.insert(walllist, {mesh = wall.mesh, pos = {{wall.pos[1][1], wall.pos[1][2]}, {wall.pos[2][1], wall.pos[2][2]}}, body = wall.body, shape = wall.shape, fixture = wall.fixture})
             -- table.insert(Walls.list, {pos = {s = {x = wall[1][1], y = wall[1][2]}, e = {x = wall[2][1], y = wall[2][2]}}, body = wall.body, shape = wall.shape, fixture = wall.fixture})
 
     end
-    
-    return Walls.list
+    return walllist
 end
 
 return Walls

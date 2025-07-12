@@ -1,5 +1,5 @@
 Draw = {}
-
+Textures = require("libs.textures")
 
 
 function Draw:Menu(Buttons)
@@ -31,7 +31,6 @@ function Draw.InGame(params)
 
     -- Draw the player indicator and FPS/debug info
     love.graphics.setColor(255, 0, 0, 255)
-    DrawRotatedRectangle("fill", player.x + 25, -player.y + 200, 10, 1, player.angle)
     love.graphics.print(fps)
 
     love.graphics.print("x: " .. tostring(player.x), 0, 20)
@@ -42,10 +41,12 @@ function Draw.InGame(params)
     -- Draw walls
     love.graphics.setColor(255, 255, 255, 255)
     local sortedWalls = SortWalls(Walls, player)
-    for key, value in pairs(sortedWalls) do
+    love.graphics.setLineWidth(1)
+    
+    for key, wall in pairs(sortedWalls) do
         local relative_pos = {
-            s = { x = value.pos[1][1] - player.x, y = value.pos[1][2] - player.y },
-            e = { x = value.pos[2][1] - player.x, y = value.pos[2][2] - player.y }
+            s = { x = wall.pos[1][1] - player.x, y = wall.pos[1][2] - player.y },
+            e = { x = wall.pos[2][1] - player.x, y = wall.pos[2][2] - player.y }
         }
         local angle = {
             ---@diagnostic disable-next-line: deprecated
@@ -98,15 +99,14 @@ function Draw.InGame(params)
             { vertices[5], vertices[6], 1, 0 },
             { vertices[7], vertices[8], 1, 1 }
         }
-        local mesh = love.graphics.newMesh(vertices)
-        mesh:setTexture(Textures.wallTexture, "fan")
-        love.graphics.draw(mesh)
 
+        wall.mesh:setVertices(vertices)
+        love.graphics.draw(wall.mesh)
 
 
 
         -- Draw the minimap line for the wall
-        love.graphics.line(value.pos[1][1] + 25, -value.pos[1][2] + 200, value.pos[2][1] + 25, -value.pos[2][2] + 200)
+        love.graphics.line(wall.pos[1][1] + 25, -wall.pos[1][2] + 200, wall.pos[2][1] + 25, -wall.pos[2][2] + 200)
     end
 
     -- Draw entities
@@ -133,12 +133,11 @@ function Draw.InGame(params)
         --if entity.body:geuserdata == ball
         love.graphics.circle("fill", screen_pos.x, screen_pos.y, math.min(100 / dist, 100), 500)
     end
-    love.graphics.setColor(0.001, 1, 0.001)
     for key, otherplayer in pairs(Players.list) do
         -- print(otherplayer.y)
         local x, y = otherplayer.x, otherplayer.y
         love.graphics.points(x + 25, -y + 200)
-
+        
         local relative_pos = {
             x = x - player.x,
             y = y - player.y
@@ -157,22 +156,53 @@ function Draw.InGame(params)
         end
         -- local w, h = otherplayer.shape:getRadius() * 2, otherplayer.shape:getRadius() * 2
         local w, h = 2 * (math.atan(2/dist) * screen_width) / player.fov, 5 * screen_height / dist        --so far radius =2
-        love.graphics.rectangle("fill", screen_pos.x - w/2 , screen_pos.y - h/2, w, h)
+        love.graphics.setColor(0.001, 1, 0.001)
+        love.graphics.setLineWidth(5)
+        love.graphics.rectangle("line", screen_pos.x - w/2 , screen_pos.y - h/2, w, h)
+        love.graphics.setColor(1, 1, 1, 0.5)
+        love.graphics.draw(Textures.ayakakaTexture, screen_pos.x - w/2 , screen_pos.y - h/2, 0, w / Textures.ayakakaTexture:getWidth(), h / Textures.ayakakaTexture:getHeight())
     end
     HUD(
-        player
+        player,
+        Game
     )
 end
 
-function HUD(LocalPlayer)
+function HUD(LocalPlayer, Game)
     local size = 1
+    local screen_width, screen_height = love.graphics.getDimensions()
+    
+    love.graphics.setLineWidth(1)
+    --CROSSHAIR
+    love.graphics.setColor(1, 1, 1, 1)
+    if Game.UI.crosshair == "internal" then
+        love.graphics.setColor(1, 0, 0, 1)
+        love.graphics.setLineWidth(2)
+        love.graphics.line(screen_width/2 + size *-30, screen_height/2, screen_width/2 + size * -10, screen_height/2)
+        love.graphics.line(screen_width/2 + size * 30, screen_height/2, screen_width/2 + size *  10, screen_height/2)
+        love.graphics.line(screen_width/2, screen_height/2  - size * 30, screen_width/2 , screen_height/2 - size * 10)
+        love.graphics.line(screen_width/2, screen_height/2  + size * 30, screen_width/2 , screen_height/2 + size * 10)
+    else
+        love.graphics.setColor(1, 1, 1, 0.8)
+        love.graphics.draw(Textures.crosshairTexture, screen_width/2 - size * Textures.crosshairTexture:getWidth() / 2, screen_height/2 - size * Textures.crosshairTexture:getHeight() / 2)
+    end
+
+
+    --MINIMAP
+    love.graphics.setColor(0, 0, 1, 1)
+    love.graphics.line(25 + LocalPlayer.x, 200 - LocalPlayer.y, 25 + LocalPlayer.x + 5 * math.cos(LocalPlayer.angle), 200 - LocalPlayer.y + 5 * math.sin(LocalPlayer.angle))
+    
+    
     --LIFEBAR
     love.graphics.setColor(1, 0, 0, 1)
-    love.graphics.rectangle("fill", 20, love.graphics.getHeight() - 30, size * love.graphics.getWidth() / 10, 20)
+    love.graphics.rectangle("fill", 20, screen_height - 30, size * screen_width / 10, 20)
     love.graphics.setColor(0, 1, 0, 1)
-    love.graphics.rectangle("fill", 21, love.graphics.getHeight() - 29, (LocalPlayer.Health / LocalPlayer.maxHealth) * love.graphics.getWidth() / 10 -2 , 18)
+    love.graphics.rectangle("fill", 21, screen_height - 29, (LocalPlayer.Health / LocalPlayer.maxHealth) * screen_width / 10 -2 , 18)
     love.graphics.setColor(math.abs(LocalPlayer.Health / LocalPlayer.maxHealth - 1), LocalPlayer.Health / LocalPlayer.maxHealth, 0, 1)
-    love.graphics.print(tostring(LocalPlayer.Health), size * love.graphics.getWidth() / 10 + 30, love.graphics.getHeight() -27)
+    love.graphics.print(tostring(LocalPlayer.Health), size * screen_width / 10 + 30, screen_height -27)
+    
+    
+    -- DrawRotatedRectangle("fill", player.x + 25, -player.y + 200, 10, 1, player.angle)
     
     
 end

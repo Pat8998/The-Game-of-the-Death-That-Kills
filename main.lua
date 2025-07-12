@@ -15,6 +15,7 @@ local Player = require("libs.players")
 local Multiplayer = require("libs.multiplayer")
 local Client = require("libs.client")
 local Weapons = require("libs.weapons")
+local Textures = function () return require('libs.textures') end
 local enet = require "enet"  --put it in global to call it from libraries ???
 local json = require("libs.external.lunajson")
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
@@ -25,6 +26,10 @@ local data = {}
 local Map = {walls = {list = {}}}
 local Entities = {}
 local Game = {
+    UI = {
+        crosshair = Textures().crosshairTexture,  -- Crosshair texture
+        crosshairSize = 1,  -- Size of the crosshair
+    },
     InHostedGame = false,
     InClientGame = false,
     IsPaused = true,
@@ -76,13 +81,6 @@ local Channels = {
 }
 local LocalPlayer = Players.list[0]
 local Buttons = {}
-local Textures = {
-    wallTexture = love.graphics.newImage("assets/wall.png"),
-    -- playerTexture = love.graphics.newImage("assets/player.png"),
-    -- bulletTexture = love.graphics.newImage("assets/bullet.png"),
-    -- crosshairTexture = love.graphics.newImage("assets/crosshair.png"),
-    ayakakaTexture = love.graphics.newImage("assets/ayakaka.png")
-}
 --canvas is great
 --color mask for color
 
@@ -95,6 +93,7 @@ function love.load()
     love.window.setMode(love.graphics.getWidth(), love.graphics.getHeight(), {fullscreen = false})
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
     local screen_width, screen_height = love.graphics.getWidth(), love.graphics.getHeight()
+    Textures = Textures()
     Game.Buttons = {
         Quit = Button:new(screen_width/2 -100, 200, 200, 50, "Quit", function()
             love.event.quit()
@@ -336,9 +335,15 @@ function love.keypressed(key)
         love.window.close()
     end
     if key == "c" then
-        love.mouse.setCursor(love.mouse.newCursor("assets.ayakaka.png", 0, 0))
+        if Game.UI.crosshair == Textures.crosshairTexture then
+            Game.UI.crosshair = "internal"
+            love.mouse.setCursor(love.mouse.getSystemCursor("sizeall"))
+        else
+            love.mouse.setCursor(love.mouse.newCursor("assets/ayakaka.png", 200, 200))
+            Game.UI.crosshair = Textures.crosshairTexture
+        end
     end
-    if key == "lalt" then
+        if key == "lalt" then
         love.mouse.setPosition(love.graphics.getWidth()/2, love.graphics.getHeight()/2)
     end
     if key == "escape" then

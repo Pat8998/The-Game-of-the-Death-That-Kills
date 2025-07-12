@@ -98,13 +98,17 @@ function InGame.updateHost(params)
         local coucou = ""
         if Game.InHostedGame then 
             local     x1, y1 = player.body:getPosition()
-            local     x2, y2 = x1 + math.cos(player.angle) * 1000, y1 + math.sin(player.angle) * 1000
-                world:rayCast(x1, y1, x2, y2,
-                    function(fixture, hitX, hitY, normalX, normalY, fraction)
-                        coucou ="Hit fixture with userdata:" .. fixture:getUserData() .. "\n"
-                        return 1 -- Stop at the first hit
-                    end
-                )
+            local     x2, y2 =  x1 + math.cos(player.angle) * 4000, y1 + math.sin(player.angle) * 3000
+            -- x2, y2 = 1,1
+                -- world:rayCast(x1, y1, x2, y2,
+                -- -- world:rayCast(x2, y2, x1, y1,
+                --     function(fixture, hitX, hitY, normalX, normalY, fraction)
+                --         coucou ="Hit fixture with userdata:" .. fixture:getUserData() .. "    " ..  fraction  .. "\n"
+                --         player.Highlight = fixture:getUserData()
+                --         -- print("Hit fixture with userdata: " .. fixture:getUserData() .. " at fraction: " .. fraction)
+                --         return 0 -- Stop at the first hit
+                --     end
+                -- )
         else
             coucou = "Not in hosted game"
         end
@@ -413,20 +417,9 @@ function InGame.CreateLocalGame(params)
     local Player = params.Player
     local Map = params.Map
     local Entities = params.Entities
-    Map.walls.list = Walls.default
-    for key, Wall in pairs(Map.walls.list) do
-        Wall.body = love.physics.newBody(world, Wall.pos[1][1], Wall.pos[1][2], "static")        -- Create the body at the first point of the wall
-        -- Adjust the shape coordinates relative to the body's position
-        local x1, y1 = 0, 0  -- Relative to Wall.body's position (Wall.pos[1])
-        local x2, y2 = Wall.pos[2][1] - Wall.pos[1][1], Wall.pos[2][2] - Wall.pos[1][2]
-        -- Create the shape with corrected coordinates
-        Wall.shape = love.physics.newEdgeShape(x1, y1, x2, y2)
-        -- Attach the shape to the body
-        Wall.fixture = love.physics.newFixture(Wall.body, Wall.shape, 1)
-        Wall.fixture:setUserData("wall" .. key)
-        Wall.fixture:setCategory(16)
-    end
-
+    print(#Walls.default)
+    Map.walls.list = Walls.setLocal(Walls.default)
+    print("hello")
     -- for players = palyers.number
     for k in pairs(Players.list) do
         Players.list[k] = nil
