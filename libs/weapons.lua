@@ -27,7 +27,7 @@ Weapons.list = {
         BulletDuration = 3,
         speed = 2,
         spread = 1*math.pi / 180,  -- Spread in rads
-        damage = 15,
+        damage = 50,
     },
     Ball = {
         name = "Ball",

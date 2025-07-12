@@ -418,7 +418,7 @@ function beginContact(a, b, coll)
             --ADD THZE PLAYER HEALTHE SYSTEM LOLLL
             for key, value in pairs(Players.list) do
                 if value.fixture == other then
-                    value.Health = value.Health - 10
+                    value.Health = value.Health - Entities.list[bullet:getBody()].player.weapon.damage
                     break
                 end
                 -- print(value.fixture, other)

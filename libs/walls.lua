@@ -345,6 +345,13 @@ function Walls:generate(seed)
 
 
     generateWallsList()
+    for _, wall in ipairs(walls) do
+        for k, v in pairs(walls) do
+            if (wall.pos == v.pos or (wall.pos[1] == v.pos[2] and wall.pos[2] == v.pos[1])) then
+                table.remove(walls, k)
+            end
+        end
+    end
     return Walls.setLocal(walls)
 end
 
@@ -371,7 +378,15 @@ function Walls.setLocal(walls)
             { love.graphics.getWidth() - 10, love.graphics.getHeight() - 10, 1, 1 }
         })
         wall.mesh:setTexture(Textures.wallTexture, "fan")
-            table.insert(walllist, {mesh = wall.mesh, pos = {{wall.pos[1][1], wall.pos[1][2]}, {wall.pos[2][1], wall.pos[2][2]}}, body = wall.body, shape = wall.shape, fixture = wall.fixture})
+
+        -- for k, v in pairs(walls) do
+        --     if (wall.pos == v.pos or (wall.pos[1] == v.pos[2] and wall.pos[2] == v.pos[1])) then
+        --         print(_, k)
+        --         table.remove(walls, k)
+        --     end
+        -- end
+        
+        table.insert(walllist, {mesh = wall.mesh, pos = wall.pos, body = wall.body, shape = wall.shape, fixture = wall.fixture})
             -- table.insert(Walls.list, {pos = {s = {x = wall[1][1], y = wall[1][2]}, e = {x = wall[2][1], y = wall[2][2]}}, body = wall.body, shape = wall.shape, fixture = wall.fixture})
 
     end

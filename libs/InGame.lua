@@ -137,6 +137,8 @@ function InGame.updateHost(params)
         if p.Health <= 0 then
             p.Health = p.maxHealth
             p.body:setPosition(0, 150)
+            p.body:setLinearVelocity(0, 0)
+            p.body:setAngularVelocity(26)
         end
         -- p.angle = p.body:getAngle()
     end
