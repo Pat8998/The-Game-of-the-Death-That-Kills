@@ -124,6 +124,7 @@ function Multiplayer.ServerReceive (dt, players, Channels, Player, Game, Entitie
                             event.player.moveSpeed = 0
                         end
                         event.player.angle = data.angle
+                        event.player.isZooming = data.isZooming or false
                     elseif data.type == "shoot" then
                         for i, client in pairs(players.list) do
                             if client.peer == event.peer then

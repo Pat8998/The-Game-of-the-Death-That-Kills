@@ -85,9 +85,11 @@ function InGame.updateHost(params)
     if love.mouse.isDown(2) then
         player.fov = math.max(math.pi / 3, player.fov - math.pi / 6 * dt * 4)
         player.ScaleFactor = math.min(3, player.ScaleFactor + dt * 4)
+        player.isZooming = true
     else
         player.fov = math.min(math.pi / 2, player.fov + math.pi / 6 * dt * 4)
         player.ScaleFactor = math.max(2, player.ScaleFactor - dt * 4)
+        player.isZooming = false
     end
 
     if mouse.lb then
@@ -293,6 +295,15 @@ function InGame.updateClient(params)
             elseif love.keyboard.isDown("q") then
                 dir = dir + math.pi / 2
             end
+            if mouse.rb then
+                localplayer.fov = math.max(math.pi / 3, localplayer.fov - math.pi / 6 * dt * 4)
+                localplayer.ScaleFactor = math.min(3, localplayer.ScaleFactor + dt * 4)
+                localplayer.isZooming = true
+            else
+                localplayer.fov = math.min(math.pi / 2, localplayer.fov + math.pi / 6 * dt * 4)
+                localplayer.ScaleFactor = math.max(2, localplayer.ScaleFactor - dt * 4)
+                localplayer.isZooming = false
+            end
 
             Client.Move(dir, localplayer, Game)
         end
@@ -300,13 +311,6 @@ function InGame.updateClient(params)
 
 
 
-    if mouse.rb then
-        localplayer.fov = math.max(math.pi / 3, localplayer.fov - math.pi / 6 * dt * 4)
-        localplayer.ScaleFactor = math.min(3, localplayer.ScaleFactor + dt * 4)   
-    else
-        localplayer.fov = math.min(math.pi / 2, localplayer.fov + math.pi / 6 * dt * 4)
-        localplayer.ScaleFactor = math.max(2, localplayer.ScaleFactor - dt * 4)
-    end
     
     if mouse.lb then
         Client.Shoot(LocalPlayer.weapon, Game)

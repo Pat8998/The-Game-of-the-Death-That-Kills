@@ -16,6 +16,7 @@ function Client.Move(dir, player, Game)
         dir = dir,
         speed = player.moveSpeed,
         angle = player.angle,
+        isZooming = player.isZooming,
     })
     -- print("Sending move data to server: " .. dir .. " " .. speed)
     Game.Server.peer:send(json.encode(data), Game.enetChannels.ActionChannel)
