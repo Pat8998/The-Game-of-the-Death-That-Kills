@@ -105,7 +105,7 @@ function love.load()
         end),
         GenerateWalls = Button:new(screen_width/2 -100, 400, 200, 50, "Generate Walls", function()
             Walls:clear(Map.walls.list)   -- Clear the walls list
-            Map.walls.list = Walls:generate(20)
+            Map.walls.list = Walls:generate(56, 10, 2)
         end),
         JoinGame = Button:new(screen_width/2 -100, 500, 200, 50, "Join Game", function ()
         Game.IsLoading = true

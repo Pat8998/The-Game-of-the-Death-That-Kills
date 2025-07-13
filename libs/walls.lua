@@ -220,10 +220,9 @@ function Walls:clear(walllist)
     walllist = {}
 end
 
-function Walls:generate(seed)
+function Walls:generate(seed, cellSize, thickness)
     local maze = {}
     local stack = {}
-    local cellSize = 10
     local cols, rows
     local current
     local walls = {}
@@ -345,10 +344,12 @@ function Walls:generate(seed)
 
 
     generateWallsList()
-    for _, wall in ipairs(walls) do
-        for k, v in pairs(walls) do
-            if (wall.pos == v.pos or (wall.pos[1] == v.pos[2] and wall.pos[2] == v.pos[1])) then
-                table.remove(walls, k)
+    for i = 1, thickness do
+        for _, wall in ipairs(walls) do
+            for k, v in pairs(walls) do
+                if (wall.pos == v.pos or (wall.pos[1] == v.pos[2] and wall.pos[2] == v.pos[1])) then
+                    table.remove(walls, k)
+                end
             end
         end
     end
@@ -359,6 +360,17 @@ end
 function Walls.setLocal(walls)
     local walllist = {}
     for _, wall in ipairs(walls) do
+            for k, v in pairs(walls) do
+                if ((
+                    wall.pos[1][1] == v.pos[2][1] and
+                    wall.pos[2][1] == v.pos[1][1] and
+                    wall.pos[1][2] == v.pos[2][2] and
+                    wall.pos[2][2] == v.pos[1][2]
+                    )) then
+                    print(_, k)
+                    table.remove(walls, k)
+                end
+            end
         -- print(world, wall.pos[1][1], wall.pos[1][2], wall.pos[2][1], wall.pos[2][2])
             wall.body = love.physics.newBody(world, wall.pos[1][1], wall.pos[1][2], "static")        -- Create the body at the first point of the wall
             -- Adjust the shape coordinates relative to the body's position
@@ -379,12 +391,7 @@ function Walls.setLocal(walls)
         })
         wall.mesh:setTexture(Textures.wallTexture, "fan")
 
-        -- for k, v in pairs(walls) do
-        --     if (wall.pos == v.pos or (wall.pos[1] == v.pos[2] and wall.pos[2] == v.pos[1])) then
-        --         print(_, k)
-        --         table.remove(walls, k)
-        --     end
-        -- end
+        
         
         table.insert(walllist, {mesh = wall.mesh, pos = wall.pos, body = wall.body, shape = wall.shape, fixture = wall.fixture})
             -- table.insert(Walls.list, {pos = {s = {x = wall[1][1], y = wall[1][2]}, e = {x = wall[2][1], y = wall[2][2]}}, body = wall.body, shape = wall.shape, fixture = wall.fixture})

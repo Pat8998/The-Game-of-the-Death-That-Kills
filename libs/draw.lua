@@ -230,8 +230,12 @@ function HUD(LocalPlayer, Game)
     love.graphics.rectangle("fill", 21, screen_height - 29, (LocalPlayer.Health / LocalPlayer.maxHealth) * screen_width / 10 -2 , 18)
     love.graphics.setColor(math.abs(LocalPlayer.Health / LocalPlayer.maxHealth - 1), LocalPlayer.Health / LocalPlayer.maxHealth, 0, 1)
     love.graphics.print(tostring(LocalPlayer.Health), size * screen_width / 10 + 30, screen_height -27)
-    
-    
+
+    --WEAPON
+    local weaponText = LocalPlayer.weapon.name or "<3"
+    love.graphics.print(weaponText, screen_width - 8 * weaponText:len(), 5, 1, 2, 2)
+
+
     -- DrawRotatedRectangle("fill", player.x + 25, -player.y + 200, 10, 1, player.angle)
     
     

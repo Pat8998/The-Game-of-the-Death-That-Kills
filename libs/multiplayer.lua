@@ -7,8 +7,7 @@ function Multiplayer.StartServer(ipaddr, channelsamount)
     local enet = require("enet")
     local host = enet.host_create(ipaddr, 64, channelsamount)  --64 is the max number of clients, 4 is the number of channels
     -- host:channel_limit(3)
-    print("host created")
-    print()
+    print("host created \n")
     return host
 end
 
@@ -132,8 +131,9 @@ function Multiplayer.ServerReceive (dt, players, Channels, Player, Game, Entitie
                                 break
                             end
                         end
-                        Game.Weapons.Shoot(event.player, Entities)  -- Call the shoot function with the player and weapon type
-                        -- Handle shooting logic here
+                        print(data.weapon.damage)
+                        Game.Weapons.Shoot(event.player, Entities, data.weapon)  -- Call the shoot function with the player and weapon type
+                        -- SO RIGHT NOW CLIENTS CAN CALL OP WEAPONS BUT ITS FINE
                     end
                 end
             else

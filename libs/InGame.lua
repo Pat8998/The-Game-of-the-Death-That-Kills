@@ -309,7 +309,7 @@ function InGame.updateClient(params)
     end
     
     if mouse.lb then
-        Client.Shoot("default", Game)
+        Client.Shoot(Game.Weapons.list.Rifle, Game)
     end
 
     do
@@ -355,17 +355,37 @@ function InGame.updateClient(params)
                 elseif event.channel == Game.enetChannels.WallsChannel then
                     -- print("Received from server (walls):")                      -- NOT OFTEN BUT FOR NOW ITS OK But having one OR the other is kinda bad (idk wait for a specific channel?)
                     local data = json.decode(event.data)
+                    -- Store old walls for cleanup
+                    local oldWalls = Map.walls.list
                     Map.walls.list = {}
-                    for i, obj in ipairs(data) do
-                        Map.walls.list[i] = {
-                            pos = obj.pos,
-                        }
-                    end
+                        for i, obj in ipairs(data) do
+                            -- If old wall exists, reuse its mesh
+                            if oldWalls and oldWalls[i] and oldWalls[i].mesh then
+                                Map.walls.list[i] = {
+                                    pos = obj.pos,
+                                    mesh = oldWalls[i].mesh
+                                }
+                            else
+                                -- Create new mesh for new wall
+                                local mesh = love.graphics.newMesh({
+                                    { 10, 10, 0, 1 },
+                                    { 10 * obj.pos[1][1], 10 * obj.pos[1][2], 0, 0 },
+                                    { 10 * obj.pos[2][1], 10 * obj.pos[2][2], 1, 0 },
+                                    { love.graphics.getWidth() - 10, love.graphics.getHeight() - 10, 1, 1 }
+                                })
+                                mesh:setTexture(Textures.wallTexture, "fan")
+                                
+                                Map.walls.list[i] = {
+                                    pos = obj.pos,
+                                    mesh = mesh
+                                }
+                            end
+                        end
                     --print("Received walls from server, count: ", #Map.walls.list)
                     repeat
                         event = Game.Server.host:service(Game.Server.ReceiveTimeout)
                     until event.channel == Game.enetChannels.EntityChannel and event.type == "receive"
-                    local data = json.decode(event.data)
+                    data = json.decode(event.data)
                     for i, obj in ipairs(data) do
                         --print("Received object:", obj.type, "at", obj.x, obj.y)
                     if obj.type == "Bullet" then

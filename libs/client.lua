@@ -1,11 +1,11 @@
 local Client = {}
 local json = require("libs.external.lunajson")
 
-function Client.Shoot(type, Game)
-    type = type or "default"  -- Default to "pistol" if no type is provided
+function Client.Shoot(weapon, Game)
+    weapon = weapon or "default"  -- Default to "pistol" if no type is provided
     local data = ({
         type = "shoot",
-        weapon = type
+        weapon = weapon
     })
     Game.Server.peer:send(json.encode(data), Game.enetChannels.ActionChannel)
 end
