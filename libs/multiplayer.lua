@@ -131,7 +131,6 @@ function Multiplayer.ServerReceive (dt, players, Channels, Player, Game, Entitie
                                 break
                             end
                         end
-                        print(data.weapon.damage)
                         Game.Weapons.Shoot(event.player, Entities, data.weapon)  -- Call the shoot function with the player and weapon type
                         -- SO RIGHT NOW CLIENTS CAN CALL OP WEAPONS BUT ITS FINE
                     end

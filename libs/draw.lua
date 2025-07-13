@@ -160,6 +160,7 @@ function Draw.InGame(params)
             end
             --if entity.body:geuserdata == ball
             love.graphics.circle("fill", screen_pos.x, screen_pos.y, math.min(100 / dist, 100), 500)
+
         else
             local otherplayer = object
             -- Draw other players

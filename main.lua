@@ -187,7 +187,8 @@ function love.load()
 
     Entities = {defaultShapes = {
         point = love.physics.newEdgeShape(0, 0, 0, 0),
-        bullet = love.physics.newCircleShape(1)
+        bullet = love.physics.newCircleShape(0.01)
+        -- bullet = love.physics.newEdgeShape(0, 0, 10, 0)  --IDK Crashes PHYSICS
     }, list = {}}
 
 
@@ -418,7 +419,7 @@ function beginContact(a, b, coll)
             --ADD THZE PLAYER HEALTHE SYSTEM LOLLL
             for key, value in pairs(Players.list) do
                 if value.fixture == other then
-                    value.Health = value.Health - Entities.list[bullet:getBody()].player.weapon.damage
+                    value.Health = value.Health - Entities.list[bullet:getBody()].weapon.damage
                     break
                 end
                 -- print(value.fixture, other)

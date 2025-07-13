@@ -300,16 +300,16 @@ function InGame.updateClient(params)
 
 
 
-    if love.mouse.isDown(2) then
-        player.fov = math.max(math.pi / 3, player.fov - math.pi / 6 * dt * 4)
-        player.ScaleFactor = math.min(3, player.ScaleFactor + dt * 4)   
+    if mouse.rb then
+        localplayer.fov = math.max(math.pi / 3, localplayer.fov - math.pi / 6 * dt * 4)
+        localplayer.ScaleFactor = math.min(3, localplayer.ScaleFactor + dt * 4)   
     else
-        player.fov = math.min(math.pi / 2, player.fov + math.pi / 6 * dt * 4)
-        player.ScaleFactor = math.max(2, player.ScaleFactor - dt * 4)
+        localplayer.fov = math.min(math.pi / 2, localplayer.fov + math.pi / 6 * dt * 4)
+        localplayer.ScaleFactor = math.max(2, localplayer.ScaleFactor - dt * 4)
     end
     
     if mouse.lb then
-        Client.Shoot(Game.Weapons.list.Rifle, Game)
+        Client.Shoot(LocalPlayer.weapon, Game)
     end
 
     do
@@ -410,7 +410,7 @@ function InGame.updateClient(params)
                         if obj.number == localplayer.number then
                             localplayer.x = obj.x
                             localplayer.y = obj.y
-                            localplayer.fov = obj.fov or math.pi / 2
+                            localplayer.fov = obj.fov or localplayer.fov or math.pi / 2
                         end
                     end
 

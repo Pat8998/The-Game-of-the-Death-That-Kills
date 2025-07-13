@@ -34,9 +34,10 @@ Weapons.list = {
         number = 3,
         shootDelay = 0.01,
         BulletDuration = 2,
-        speed = 0.2,
+        speed = 0.5,
         spread = 10*math.pi / 180,  -- Spread in rads
         damage = 0,
+        mass = 25,
     },
 }
 
@@ -67,6 +68,9 @@ end
 
 function Weapons.Shoot(player, Entities, weapon)
     weapon = weapon or player.weapon or Weapons.list.Default  -- Use player's weapon or default if not specified
+    if player.isZooming then
+        weapon.spread = weapon.spread/2  -- Use default weapon if player is zooming
+    end
     if love.timer.getTime() > player.NextShoot then
         local bullets = (type(weapon.bullets) == "function" and weapon.bullets() or weapon.bullets) or 1  -- Call function if present
         -- print(bullets)
@@ -79,7 +83,10 @@ function Weapons.Shoot(player, Entities, weapon)
             fixture:setMask(player.number)
             fixture:setCategory(player.number)
             body:setBullet(true)
-            body:applyLinearImpulse(math.cos(angle) * weapon.speed * 0.5 , math.sin(angle) * weapon.speed * 0.5)
+            body:setAngle(angle)
+            print(body:getMass())
+            body:setMass(body:getMass() * (weapon.mass or 1))  -- Reduce mass for Ball weapon
+            body:applyLinearImpulse(math.cos(angle) * weapon.speed * 0.001 , math.sin(angle) * weapon.speed * 0.001)
             Entities.list[body] = {body = body, fixture = fixture, angle = player.angle, player = player, life = weapon.BulletDuration or 2, weapon = weapon}
             player.NextShoot = love.timer.getTime() + (weapon.shootDelay or 0.00001)  -- Default shoot delay if not specified
             bullets = bullets - 1
