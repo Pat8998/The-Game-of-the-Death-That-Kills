@@ -116,15 +116,17 @@ function Multiplayer.ServerReceive (dt, players, Channels, Player, Game, Entitie
                         -- print("Received move command from player", event.player, ":", data.dir, data.speed)
                         event.player.dir = data.dir
                         -- print("Player", event.player.number, "moving in direction", event.player.dir, "with speed", data.speed)
-                        if data.speed == 2 then
-                            event.player.moveSpeed = 2200
-                        elseif data.speed == 1 then
+                        event.player.isZooming = data.isZooming or false
+                        if event.player.isZooming and data.speed < 0 then
                             event.player.moveSpeed = 1100
+                        elseif data.speed == 4400 then
+                            event.player.moveSpeed = 4400
+                        elseif data.speed == 2200 then
+                            event.player.moveSpeed = 2200
                         elseif not event.player.Glide then
                             event.player.moveSpeed = 0
                         end
                         event.player.angle = data.angle
-                        event.player.isZooming = data.isZooming or false
                     elseif data.type == "shoot" then
                         for i, client in pairs(players.list) do
                             if client.peer == event.peer then

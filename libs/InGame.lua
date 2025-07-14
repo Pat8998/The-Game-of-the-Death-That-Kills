@@ -27,7 +27,7 @@ function InGame.updateHost(params)
     if not love.keyboard.isDown("lalt") and love.window.hasFocus() then
         love.mouse.setGrabbed(true)
         love.mouse.setVisible(false)
-        player.angle = player.angle - dmouse.x / 40
+        player.angle = player.angle - dt * (dmouse.x) * (player.isZooming and 0.5 or 1)
         if player.angle > 2 * math.pi then
             player.angle = player.angle - 2 * math.pi
         elseif player.angle < -2 * math.pi then  -- Assuming you want to normalize negative angles too
@@ -47,9 +47,12 @@ function InGame.updateHost(params)
     -- Update movement based on keys pressed
 
     do
-        if love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift") then
+        local movement = love.keyboard.isDown("z") or love.keyboard.isDown("s") or love.keyboard.isDown("d") or love.keyboard.isDown("q")
+        if player.isZooming and (movement) then
+            player.moveSpeed = 1100
+        elseif (love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")) and movement then
                 player.moveSpeed = 2 * 2200
-            elseif love.keyboard.isDown("z") or love.keyboard.isDown("s") or love.keyboard.isDown("d") or love.keyboard.isDown("q") then
+            elseif movement then
                 player.moveSpeed = 1 * 2200
             elseif not player.Glide then
                 player.moveSpeed = 0
@@ -253,7 +256,7 @@ function InGame.updateClient(params)
         if not love.keyboard.isDown("lalt") and love.window.hasFocus() then
             love.mouse.setGrabbed(true)
             love.mouse.setVisible(false)
-            localplayer.angle = localplayer.angle - dmouse.x / 40
+            localplayer.angle = localplayer.angle - dmouse.x * dt * (localplayer.isZooming and 0.5 or 1)
             if localplayer.angle > 2 * math.pi then
                 localplayer.angle = localplayer.angle - 2 * math.pi
             elseif localplayer.angle < -2 * math.pi then  -- Assuming you want to normalize negative angles too
@@ -271,10 +274,13 @@ function InGame.updateClient(params)
         end
 
         do
-            if love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift") then
-                    localplayer.moveSpeed = 2
-            elseif love.keyboard.isDown("z") or love.keyboard.isDown("s") or love.keyboard.isDown("d") or love.keyboard.isDown("q") then
-                    localplayer.moveSpeed = 1
+            local movement = love.keyboard.isDown("z") or love.keyboard.isDown("s") or love.keyboard.isDown("d") or love.keyboard.isDown("q")
+            if movement then
+                if love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift") then
+                    localplayer.moveSpeed = 4400
+                else
+                    localplayer.moveSpeed = 2200
+                end
             elseif not localplayer.Glide then
                     localplayer.moveSpeed = 0
             end
