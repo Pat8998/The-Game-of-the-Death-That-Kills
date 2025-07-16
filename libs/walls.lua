@@ -367,7 +367,7 @@ function Walls.setLocal(walls)
                     wall.pos[1][2] == v.pos[2][2] and
                     wall.pos[2][2] == v.pos[1][2]
                     )) then
-                    print(_, k)
+                    -- print(_, k)
                     table.remove(walls, k)
                 end
             end

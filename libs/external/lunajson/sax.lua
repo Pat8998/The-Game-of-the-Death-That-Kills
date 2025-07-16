@@ -1,3 +1,4 @@
+---@diagnostic disable: redundant-parameter, cast-local-type, global-in-nil-env, deprecated
 local setmetatable, tonumber, tostring =
       setmetatable, tonumber, tostring
 local floor, inf =

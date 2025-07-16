@@ -223,6 +223,28 @@ function HUD(LocalPlayer, Game)
     love.graphics.setColor(0, 0, 1, 1)
     love.graphics.line(25 + LocalPlayer.x, 200 - LocalPlayer.y, 25 + LocalPlayer.x + 5 * math.cos(LocalPlayer.angle), 200 - LocalPlayer.y - 5 * math.sin(LocalPlayer.angle))
     
+    do
+        --WEAPON
+        love.graphics.setColor(1, 1, 1, 0.9)
+        local weaponIMG = (not LocalPlayer.isZooming and (Textures.weapons[LocalPlayer.weapon.name] or Textures.weapons.Default).normal) or
+                                                        ((Textures.weapons[LocalPlayer.weapon.name] or Textures.weapons.Default).aimed)
+        local weaponScale = (screen_height/2) / weaponIMG:getHeight()
+        local weaponShearing = {
+            x = (LocalPlayer.moveSpeed / (LocalPlayer.isZooming and 11000 or 44000)) * math.sin(love.timer.getTime() * (LocalPlayer.moveSpeed / 550)) -- bobbing effect
+                + (LocalPlayer.isZooming and (LocalPlayer.fov/(math.pi/3) - 1) or LocalPlayer.fov/(math.pi/2) - 1),  -- zooming effect
+            -- x = (LocalPlayer.isZooming and -1 or 1) * (LocalPlayer.fov - math.pi/2) * (LocalPlayer.fov - math.pi/3),
+            y = 0.5 * (LocalPlayer.isZooming and (LocalPlayer.fov/(math.pi/3) - 1) or  - (LocalPlayer.fov/(math.pi/2) - 1))
+        }
+        local weaponText = (LocalPlayer.weapon.name .. weaponShearing.y) or "<3"
+        love.graphics.print(weaponText, screen_width - 8 * weaponText:len(), 5, 1, 2, 2)
+        love.graphics.draw(weaponIMG,
+        (LocalPlayer.isZooming and screen_width/2 - weaponIMG:getWidth()/2 * weaponScale * size) or (screen_width - weaponIMG:getWidth() * weaponScale * size),
+        screen_height - weaponIMG:getHeight() * weaponScale  * size,
+        0,
+        weaponScale * size,
+        nil, nil, nil,
+        weaponShearing.x, weaponShearing.y)
+    end
     
     --LIFEBAR
     love.graphics.setColor(1, 0, 0, 1)
@@ -232,9 +254,6 @@ function HUD(LocalPlayer, Game)
     love.graphics.setColor(math.abs(LocalPlayer.Health / LocalPlayer.maxHealth - 1), LocalPlayer.Health / LocalPlayer.maxHealth, 0, 1)
     love.graphics.print(tostring(LocalPlayer.Health), size * screen_width / 10 + 30, screen_height -27)
 
-    --WEAPON
-    local weaponText = LocalPlayer.weapon.name or "<3"
-    love.graphics.print(weaponText, screen_width - 8 * weaponText:len(), 5, 1, 2, 2)
 
 
     -- DrawRotatedRectangle("fill", player.x + 25, -player.y + 200, 10, 1, player.angle)
