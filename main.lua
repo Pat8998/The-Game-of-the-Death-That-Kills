@@ -3,8 +3,6 @@
 -- and do things when they collide walls
 -- and add multiplayer
 
---BIG PROBLEM : HOW TO KNOW WETHER YOU DRAW WALLS OR ENTITIES ?
--- CREATE A TO DRAW TABLE SORTED? WiTH AN IF THAT GETS THE BODY TYPE
 --enet channel 2 for connect
 
 local Button = require("libs.buttons")
@@ -473,3 +471,6 @@ end
 -- IT IS RATHER just over 0
 -- for both coordinates
 -- See ya
+
+--BIG PROBLEM : HOW TO KNOW WETHER YOU DRAW WALLS OR ENTITIES ?
+-- CREATE A TO DRAW TABLE SORTED? WiTH AN IF THAT GETS THE BODY TYPE

@@ -117,7 +117,8 @@ function Multiplayer.ServerReceive (dt, players, Channels, Player, Game, Entitie
                         event.player.dir = data.dir
                         -- print("Player", event.player.number, "moving in direction", event.player.dir, "with speed", data.speed)
                         event.player.isZooming = data.isZooming or false
-                        if event.player.isZooming and data.speed < 0 then
+                        event.player.weapon = Game.Weapons.list[data.weapon] or event.player.weapon or Game.Weapons.list.default
+                        if event.player.isZooming and data.speed > 0 then
                             event.player.moveSpeed = 1100
                         elseif data.speed == 4400 then
                             event.player.moveSpeed = 4400
@@ -134,7 +135,7 @@ function Multiplayer.ServerReceive (dt, players, Channels, Player, Game, Entitie
                                 break
                             end
                         end
-                        Game.Weapons.Shoot(event.player, Entities, data.weapon)  -- Call the shoot function with the player and weapon type
+                        Game.Weapons.Shoot(event.player, Entities, data.weapon or event.player.weapon)  -- Call the shoot function with the player and weapon type
                         -- SO RIGHT NOW CLIENTS CAN CALL OP WEAPONS BUT ITS FINE
                     end
                 end

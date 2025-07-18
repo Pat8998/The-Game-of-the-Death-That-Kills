@@ -197,8 +197,11 @@ function InGame.UpdateWhileLoading( params)
         Game.IsLoading = false
         Game.InClientGame = false
         Game.IsPaused = true
+    elseif love.keyboard.isDown("l") then
+        Game.IsJoining = 1
+        Game.Server.ipaddr = 'localhost:6969'
     end
-    
+
     if Game.IsJoining == 1 then
         Game.Server.host = enet.host_create()
         Game.Server.peer = Game.Server.host:connect(Game.Server.ipaddr, Game.enetChannels.amount)  --3 is the number of channels. add more if needed
@@ -276,7 +279,9 @@ function InGame.updateClient(params)
         do
             local movement = love.keyboard.isDown("z") or love.keyboard.isDown("s") or love.keyboard.isDown("d") or love.keyboard.isDown("q")
             if movement then
-                if love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift") then
+                if localplayer.isZooming then
+                   localplayer.moveSpeed = 1100
+                elseif love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift") then
                     localplayer.moveSpeed = 4400
                 else
                     localplayer.moveSpeed = 2200
@@ -319,7 +324,7 @@ function InGame.updateClient(params)
 
     
     if mouse.lb then
-        Client.Shoot(LocalPlayer.weapon, Game)
+        Client.Shoot(nil, Game) --nil to avoid op weapons I guess
     end
 
     do
