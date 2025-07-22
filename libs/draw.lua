@@ -227,19 +227,20 @@ function HUD(LocalPlayer, Game)
         --WEAPON
         love.graphics.setColor(1, 1, 1, 0.9)
         local weaponIMG = (not LocalPlayer.isZooming and (Textures.weapons[LocalPlayer.weapon.name] or Textures.weapons.Default).normal) or
-                                                        ((Textures.weapons[LocalPlayer.weapon.name] or Textures.weapons.Default).aimed)
-        local weaponScale = (screen_height/2) / weaponIMG:getHeight()
+                                                          ((Textures.weapons[LocalPlayer.weapon.name] or Textures.weapons.Default).aimed)
+        weaponIMG:setFilter("nearest", "nearest")
+        local weaponScale = LocalPlayer.isZooming and (screen_height) / weaponIMG:getHeight() or (screen_height/2) / weaponIMG:getHeight()
         local weaponShearing = {
-            x = (LocalPlayer.moveSpeed / (LocalPlayer.isZooming and 11000 or 44000)) * math.sin(love.timer.getTime() * (LocalPlayer.moveSpeed / 550)) -- bobbing effect
+            x = (LocalPlayer.moveSpeed / (LocalPlayer.isZooming and 22000 or 44000)) * math.sin(love.timer.getTime() * (LocalPlayer.moveSpeed / 550)) -- bobbing effect
                 + (LocalPlayer.isZooming and (LocalPlayer.fov/(math.pi/3) - 1) or LocalPlayer.fov/(math.pi/2) - 1),  -- zooming effect
             -- x = (LocalPlayer.isZooming and -1 or 1) * (LocalPlayer.fov - math.pi/2) * (LocalPlayer.fov - math.pi/3),
             y = 0.5 * (LocalPlayer.isZooming and (LocalPlayer.fov/(math.pi/3) - 1) or  - (LocalPlayer.fov/(math.pi/2) - 1))
         }
-        local weaponText = (LocalPlayer.weapon.name .. weaponShearing.y) or "<3"
+        local weaponText = (LocalPlayer.weapon.name .. weaponScale) or "<3"
         love.graphics.print(weaponText, screen_width - 8 * weaponText:len(), 5, 1, 2, 2)
         love.graphics.draw(weaponIMG,
         (LocalPlayer.isZooming and screen_width/2 - weaponIMG:getWidth()/2 * weaponScale * size) or (screen_width - weaponIMG:getWidth() * weaponScale * size),
-        screen_height - weaponIMG:getHeight() * weaponScale  * size,
+        LocalPlayer.isZooming and 0 or screen_height - weaponIMG:getHeight() * weaponScale * size,
         0,
         weaponScale * size,
         nil, nil, nil,

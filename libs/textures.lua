@@ -15,7 +15,7 @@ Textures = {
             normal = love.graphics.newImage("assets/shotgun_n.png"),
             aimed  = love.graphics.newImage("assets/shotgun_a.png")
         },
-        Rifle = {
+        LongRifle = {
             normal = love.graphics.newImage("assets/longrifle_n.png"),
             aimed  = love.graphics.newImage("assets/longrifle_a.png")
         },

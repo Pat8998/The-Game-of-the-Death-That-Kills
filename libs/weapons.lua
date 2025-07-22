@@ -20,8 +20,8 @@ Weapons.list = {
         damage = 30,
         bullets = function() return 2 + math.random(3) end,  -- Number of bullets shot at once
     },
-    Rifle = {
-        name = "Rifle",
+    LongRifle = {
+        name = "LongRifle",
         number = 2,
         shootDelay = 0.5,
         BulletDuration = 3,
@@ -29,9 +29,22 @@ Weapons.list = {
         spread = 1*math.pi / 180,  -- Spread in rads
         damage = 50,
     },
+    Rifle = {
+        name = "Rifle",
+        number = 3,
+        shootDelay = 0.01,
+        BulletDuration = 2,
+        speed = 0.7,
+        spread = 10*math.pi / 180,  -- Spread in rads
+        damage = 5,
+        mass = 25,
+        rechargetime = 0.5,  -- Time to recharge the weapon
+        maxmagazine = 10,  -- Maximum number of bullets in the magazine
+        magazine = 10,
+    },    
     Ball = {
         name = "Ball",
-        number = 3,
+        number = 4,
         shootDelay = 0.01,
         BulletDuration = 2,
         speed = 0.5,
