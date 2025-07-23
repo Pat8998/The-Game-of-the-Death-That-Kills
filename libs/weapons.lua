@@ -38,10 +38,9 @@ Weapons.list = {
         spread = 10*math.pi / 180,  -- Spread in rads
         damage = 5,
         mass = 25,
-        rechargetime = 0.5,  -- Time to recharge the weapon
-        maxmagazine = 10,  -- Maximum number of bullets in the magazine
-        magazine = 10,
-    },    
+        rechargetime = 1.5,  -- Time to recharge the weapon
+        maxmagazine = 50,  -- Maximum number of bullets in the magazine
+    },
     Ball = {
         name = "Ball",
         number = 4,
@@ -52,6 +51,10 @@ Weapons.list = {
         damage = 0,
         mass = 25,
     },
+    -- Reload = {
+    --     name = "Reload",
+    --     number = 5,
+    -- }
 }
 
 Weapons.weaponsNumber = {}
@@ -81,7 +84,8 @@ end
 
 function Weapons.Shoot(player, Entities, weapon)
     weapon = weapon or player.weapon or Weapons.list.Default  -- Use player's weapon or default if not specified
-    if love.timer.getTime() > player.NextShoot then
+    local magazine = player.magazine[weapon.name]
+    if love.timer.getTime() > player.NextShoot and magazine ~= 0 and weapon.name ~= "Reload" then
         local bullets = (type(weapon.bullets) == "function" and weapon.bullets() or weapon.bullets) or 1  -- Call function if present
         local spread
         if player.isZooming then
@@ -104,8 +108,16 @@ function Weapons.Shoot(player, Entities, weapon)
             Entities.list[body] = {body = body, fixture = fixture, angle = player.angle, player = player, life = weapon.BulletDuration or 2, weapon = weapon}
             player.NextShoot = love.timer.getTime() + (weapon.shootDelay or 0.00001)  -- Default shoot delay if not specified
             bullets = bullets - 1
+            magazine = magazine - 1
         until bullets < 1
+    elseif magazine == 0  then
+        player.NextShoot = love.timer.getTime() + (weapon.rechargetime or 0.5)  -- Recharge time if magazine is empty
+        magazine = player.weapon.maxmagazine or -1  -- Reset magazine to max if not specified
+    elseif weapon.name == "Reload" then
+        player.NextShoot = love.timer.getTime() + (weapon.rechargetime or 0.5)  -- Recharge time if weapon is Reload
+        player.magazine[player.weapon.name] = player.weapon.maxmagazine or -1  -- Reset magazine to max if not specified
     end
+    player.magazine[weapon.name] = magazine  -- Update magazine count in player's table
 end
 
 

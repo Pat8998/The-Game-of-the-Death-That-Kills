@@ -21,6 +21,7 @@ function Player.createPlayer(number, world, peer)  --define xy angle but like im
         maxHealth = 100,
         NextShoot = 0.1,
         weapon = Weapons.list.Default,  -- Default weapon
+        magazine = {}
     }
     localplayer.body = love.physics.newBody(world,localplayer.x,localplayer.y,"dynamic")
     localplayer.fixture = love.physics.newFixture(localplayer.body, localplayer.shape, 1)
@@ -28,6 +29,10 @@ function Player.createPlayer(number, world, peer)  --define xy angle but like im
     localplayer.fixture:setCategory(localplayer.number)     --I KNOW I WILL REGRET IT
     localplayer.fixture:setMask(localplayer.number)
     
+    for k, weapon in pairs(Weapons.list) do
+        localplayer.magazine[weapon.name] = weapon.maxmagazine or 10  -- Initialize magazine for each weapon
+    end
+
     function localplayer:destroy()
         if self.body then
             self.body:destroy()

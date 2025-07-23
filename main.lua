@@ -358,6 +358,14 @@ function love.keypressed(key)
     elseif key == 'kp-' then
         LocalPlayer.Health = LocalPlayer.Health - 1
     end
+    if key == 'r' then
+        LocalPlayer.magazine[LocalPlayer.weapon.name] = 0 
+        if Game.InHostedGame then
+            Game.Weapons.Shoot(LocalPlayer, Entities, LocalPlayer.weapon)  -- Shoot with the current weapon
+        elseif Game.InClientGame then
+            Client.Shoot({name = 'Reload'}, Game, LocalPlayer)  -- This wont work I think best is to createe a reload weapon
+        end
+    end
 end
 
 function love.wheelmoved(x, y)

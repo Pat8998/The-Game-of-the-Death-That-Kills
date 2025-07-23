@@ -324,7 +324,7 @@ function InGame.updateClient(params)
 
     
     if mouse.lb then
-        Client.Shoot(nil, Game) --nil to avoid op weapons I guess
+        Client.Shoot(nil, Game, localplayer) --nil to avoid op weapons I guess
     end
 
     do

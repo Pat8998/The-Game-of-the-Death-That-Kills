@@ -236,7 +236,7 @@ function HUD(LocalPlayer, Game)
             -- x = (LocalPlayer.isZooming and -1 or 1) * (LocalPlayer.fov - math.pi/2) * (LocalPlayer.fov - math.pi/3),
             y = 0.5 * (LocalPlayer.isZooming and (LocalPlayer.fov/(math.pi/3) - 1) or  - (LocalPlayer.fov/(math.pi/2) - 1))
         }
-        local weaponText = (LocalPlayer.weapon.name .. weaponScale) or "<3"
+        local weaponText = (LocalPlayer.weapon.name .. " " .. (LocalPlayer.magazine[LocalPlayer.weapon.name] or "<3")) or "<3"
         love.graphics.print(weaponText, screen_width - 8 * weaponText:len(), 5, 1, 2, 2)
         love.graphics.draw(weaponIMG,
         (LocalPlayer.isZooming and screen_width/2 - weaponIMG:getWidth()/2 * weaponScale * size) or (screen_width - weaponIMG:getWidth() * weaponScale * size),
@@ -245,6 +245,7 @@ function HUD(LocalPlayer, Game)
         weaponScale * size,
         nil, nil, nil,
         weaponShearing.x, weaponShearing.y)
+
     end
     
     --LIFEBAR
