@@ -363,6 +363,7 @@ function InGame.updateClient(params)
                             localplayer.x = obj.x
                             localplayer.y = obj.y
                             localplayer.Health = obj.Health or 50
+                            localplayer.magazine = obj.magazine or localplayer.magazine
                         end
                     end
 

@@ -116,6 +116,8 @@ function Weapons.Shoot(player, Entities, weapon)
     elseif weapon.name == "Reload" then
         player.NextShoot = love.timer.getTime() + (weapon.rechargetime or 0.5)  -- Recharge time if weapon is Reload
         player.magazine[player.weapon.name] = player.weapon.maxmagazine or -1  -- Reset magazine to max if not specified
+    else
+        -- print("Cannot shoot yet, waiting for recharge time")
     end
     player.magazine[weapon.name] = magazine  -- Update magazine count in player's table
 end
