@@ -87,12 +87,8 @@ function InGame.updateHost(params)
 
 
     if love.mouse.isDown(2) then
-        player.fov = math.max(math.pi / 3, player.fov - math.pi / 6 * dt * 4)
-        player.ScaleFactor = math.min(3, player.ScaleFactor + dt * 4)
         player.isZooming = true
     else
-        player.fov = math.min(math.pi / 2, player.fov + math.pi / 6 * dt * 4)
-        player.ScaleFactor = math.max(2, player.ScaleFactor - dt * 4)
         player.isZooming = false
     end
 
@@ -446,16 +442,35 @@ function InGame.UpdatePlayers(params)
         if player.peer == "local" then
             if player.joystick then
                 local v1, v2, v3, v4, v5, v6 = player.joystick:getAxes()
-                player.angle = player.angle - v3 * params.dt * 12
+                player.isZooming = v5 == 1 
+                if player.joystick:isGamepadDown('rightshoulder') and player.NextWeaponSwitch then
+                    params.Game.Weapons.nextWeapon(player)
+                    player.NextWeaponSwitch = false
+                elseif player.joystick:isGamepadDown('leftshoulder') and player.NextWeaponSwitch then
+                    params.Game.Weapons.previousWeapon(player)
+                    player.NextWeaponSwitch = false
+                elseif not player.joystick:isGamepadDown('leftshoulder') and not player.joystick:isGamepadDown('rightshoulder') then
+                    player.NextWeaponSwitch = true
+                    if v6 == 1 then 
+                        params.Game.Weapons.Shoot(player, params.Entities)
+                    end
+                end
+                player.angle = player.angle - v3 * params.dt * (player.isZooming and 4 or 12)
+                if player.angle > 2 * math.pi then
+                    player.angle = player.angle - 2 * math.pi
+                elseif player.angle < -2 * math.pi then  -- Assuming you want to normalize negative angles too
+                    player.angle = player.angle + 2 * math.pi
+                end
                 player.dir = player.angle + math.atan2(v1, v2)  -- Assuming v1 is x-axis and v2 is y-axis
                 local movement = v1 ~= 0 or v2 ~= 0
-                player.moveSpeed = player.isZooming and 1100 or (player.joystick:isGamepadDown('leftstick') and 4400 or movement and 2200 or 0) * math.sqrt(v1^2 + v2^2)
+                player.moveSpeed = ((player.isZooming and movement) and 1100 or player.joystick:isGamepadDown('leftstick') and 4400 or movement and 2200 or 0) * (-math.max(math.abs(v1), math.abs(v2)))
                 player.body:setLinearVelocity(
                     math.cos(player.dir) * player.moveSpeed * params.dt,
                     math.sin(player.dir) * player.moveSpeed * params.dt
                 )
-                params.Game.Debug = player.moveSpeed .. math.sqrt(v1^2 + v2^2)
             end
+            player.fov = player.isZooming and math.max(math.pi / 3, player.fov - math.pi / 6 * params.dt * 4) or math.min(math.pi / 2, player.fov + math.pi / 6 * params.dt * 4)
+            player.ScaleFactor = player.isZooming and math.min(3, player.ScaleFactor + params.dt * 4) or math.max(2, player.ScaleFactor - params.dt * 4)
         else
             player.body:setLinearVelocity(
                 math.cos(player.dir) * player.moveSpeed * params.dt,

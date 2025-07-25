@@ -19,9 +19,13 @@ function Draw.InGameSplitscreen(params)
         love.graphics.clear(0, 0, 0, 0)    -- Clear it (transparent)
         love.graphics.setCanvas()
         local pos = {x = 0, y = 0, width = love.graphics.getWidth(), height = love.graphics.getHeight()}
+        local LocalPlayers = {}
         for _, player in pairs(params.Players.list) do
             if player.peer == "local" then
-                
+                LocalPlayers[player.number] = player
+            end
+        end
+        for _, player in pairs(LocalPlayers) do
                 params.player = player
                 InGameCanvas:renderTo(function ()
                     love.graphics.clear(0, 0, 0, 0)  -- Clear the canvas for each player
@@ -30,10 +34,10 @@ function Draw.InGameSplitscreen(params)
                     love.graphics.setLineWidth(3)
                     love.graphics.rectangle("line", -1, -1, love.graphics.getWidth() + 2, love.graphics.getHeight() + 2)  -- Draw a border around the canvas
                 end)
-                pos = params.Game.SplitscreenPos[#params.Players.list][_]
+                pos = params.Game.SplitscreenPos[#LocalPlayers][_]
                 love.graphics.setColor(1, 1, 1, 1)  -- Reset color to white
                 love.graphics.draw(InGameCanvas, pos.x, pos.y, 0, pos.width/InGameCanvas:getWidth(), pos.height/InGameCanvas:getHeight())
-            end
+
         end
 end
 

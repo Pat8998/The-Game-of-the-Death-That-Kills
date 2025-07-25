@@ -64,11 +64,12 @@ for _, weapon in pairs(Weapons.list) do
 end
 
 function Weapons.nextWeapon(player)
-    if player.weapon.number >= #Weapons.weaponsNumber then
-        player.weapon = Weapons.list[Weapons.weaponsNumber[0]]
-    else
-        player.weapon = Weapons.list[Weapons.weaponsNumber[player.weapon.number + 1]]
-    end
+        if player.weapon.number >= #Weapons.weaponsNumber then
+            player.weapon = Weapons.list[Weapons.weaponsNumber[0]]
+        else
+            player.weapon = Weapons.list[Weapons.weaponsNumber[player.weapon.number + 1]]
+        end
+    
     -- print("Next weapon: " .. player.weapon.name)
 end
 function Weapons.previousWeapon(player)

@@ -21,6 +21,7 @@ function Player.createPlayer(number, world, peer, joystick)  --define xy angle b
         Health = 100,
         maxHealth = 100,
         NextShoot = 0.1,
+        NextWeaponSwitch = 0.1,  -- may regroup in player.timers table
         weapon = Weapons.list.Default,  -- Default weapon
         magazine = {}
     }

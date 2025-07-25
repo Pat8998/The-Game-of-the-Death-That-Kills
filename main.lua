@@ -368,8 +368,7 @@ end
 function love.joystickadded( joystick )
     print("Joystick added: " .. joystick:getName(), joystick:getID())
     if joystick:isGamepad() then
-        if joystick:getID() == 1 then
-            print("Joystick is already assigned to the local player")
+        if joystick:getID() == 0 then --To do tests put 1
             LocalPlayer.joystick = joystick  -- Assign the joystick to the local player
         else
             local assigned = {}
