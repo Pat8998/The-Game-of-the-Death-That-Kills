@@ -34,6 +34,7 @@ local Game = {
     IsLoading = false,
     IsPublic = false,
     IsConnectedToHost = false,
+    IsSplitscreen = false,
     InMM = false, --For now pause menu is main menu but it'll change
     IsJoining = 0,
     Server = {
@@ -43,7 +44,8 @@ local Game = {
         ReceiveTimeout = 100, --time to wait for the host to respond
     }   ,        --might have to move it somewhere else because Cannot send it th threads
     Clients = {},
-    IsMajorFrame = false, -- If the game is in a major frame (update what neeed ds to be updated)
+    IsMajorFrame = false, -- If the game is in a major frame (update what neeed to be updated)
+    SplitscreenPos = {},
     Debug = "debug",
     enetChannels = {
         NumberChannel = 0,
@@ -53,24 +55,13 @@ local Game = {
 
         amount = 4,  -- Number of channels used in the game
     },       -- If I ever add another channel (for chat or smth) I have to up the number of channels in the connect (multiplayer.lua line 13)
---     Shoot = function (dt, player, speed, Bullet_type)
---         local body = love.physics.newBody(world, player.x, player.y, "dynamic")
---         local fixture = love.physics.newFixture(body, Entities.defaultShapes.bullet, 1)
---         local angle = player.angle + math.random(-200, 200)*0.0001
---         fixture:setUserData("bullet")
---         fixture:setMask(player.number)
---         fixture:setCategory(player.number)
---         body:setBullet(true)
---         body:applyLinearImpulse(math.cos(angle) *speed , math.sin(angle) *speed)
---         Entities.list[body] = {body = body, fixture = fixture, angle = player.angle, player = player, life = 2}
--- end,
     Weapons = Weapons,  -- Weapons module
     Buttons = {},  -- Buttons table to hold all buttons
 
 }
 local Players = {
     list = {},
-    number = 2
+    number = 1
 }
 local Channels = {
     InputCommuncicationChannel = nil,
@@ -86,11 +77,13 @@ local Buttons = {}
 
 -- initialization
 function love.load()
-    love.window.setTitle("Title")
-    love.window.setFullscreen(true)
-    love.window.setMode(love.graphics.getWidth(), love.graphics.getHeight(), {fullscreen = false})
+    do
+        local desktopWidth, desktopHeight = love.window.getDesktopDimensions() 
+        love.window.setMode(desktopWidth, desktopHeight, {fullscreen = false})
+    end
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
     local screen_width, screen_height = love.graphics.getWidth(), love.graphics.getHeight()
+---@diagnostic disable-next-line: cast-local-type
     Textures = Textures()
     Game.Buttons = {
         Quit = Button:new(screen_width/2 -100, 200, 200, 50, "Quit", function()
@@ -100,6 +93,16 @@ function love.load()
             print("Game Started !")
             Game.InHostedGame = true
             Game.IsPaused = false
+        end),
+        SplitScreen = Button:new(screen_width/2 -320, 350, 200, 50, "SplitScreen", function()
+            Game.IsSplitscreen = not Game.IsSplitscreen
+            if Game.IsSplitscreen then
+                Game.Buttons.SplitScreen.text = "SingleScreen"
+                Game.Buttons.SplitScreen.x = love.graphics.getWidth()/2 + 120
+            else
+                Game.Buttons.SplitScreen.text = "SplitScreen"
+                Game.Buttons.SplitScreen.x = love.graphics.getWidth()/2 - 320
+            end
         end),
         GenerateWalls = Button:new(screen_width/2 -100, 400, 200, 50, "Generate Walls", function()
             Walls:clear(Map.walls.list)   -- Clear the walls list
@@ -131,10 +134,13 @@ function love.load()
             Game.IsPaused = false
         end, {isActive = false}),
         ClientDisconnect = Button:new(screen_width/2 -100, 500, 200, 50, "Disconnect", function ()
+                                                                                ---@diagnostic disable-next-line: undefined-field
             Game.Server.peer:disconnect()
             repeat
+                                                                                ---@diagnostic disable-next-line: undefined-field
                 print("Waiting for disconnection...", Game.Server.peer:state())
                 Game.Server.host:service(100)  -- Ensure all messages are sent
+                                                                                ---@diagnostic disable-next-line: undefined-field
             until Game.Server.peer:state() == "disconnected"
             InGame.CreateLocalGame({
                 world = world,
@@ -144,7 +150,7 @@ function love.load()
                 Player = Player,
                 Map = Map
             })
-            LocalPlayer = Players.list[1]-- Create the local player and the walls
+            LocalPlayer = Players.list[1]
             Game.InClientGame = false
             Game.Buttons.ClientResume.isActive = false
             Game.Buttons.ClientDisconnect.isActive = false
@@ -153,7 +159,6 @@ function love.load()
             Game.Buttons.JoinGame.isActive = true
             Game.Buttons.SetPublic.isActive = true
             Game.Buttons.StopServer.isActive = false
-
         end, {isActive = false}),
 
 
@@ -161,6 +166,7 @@ function love.load()
 
     
     InGameCanvas = love.graphics.newCanvas(love.graphics.getWidth(), love.graphics.getHeight())
+    BGCanvas = love.graphics.newCanvas(love.graphics.getWidth(), love.graphics.getHeight())
     blurShader = love.graphics.newShader[[
         extern number blurSize;
         vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords)
@@ -204,7 +210,25 @@ function love.load()
     })
     LocalPlayer = Players.list[1]-- Create the local player and the walls
 
+    Game.SplitscreenPos = {
+        {{x = 0, y = 0 , width = love.graphics.getWidth(), height = love.graphics.getHeight()}}, --I mean there is no need to draw spitscreen if you're alone
+        {
+            {x = 0, y = 0, width = love.graphics.getWidth()/2, height = love.graphics.getHeight()},  -- Left side
+            {x = love.graphics.getWidth()/2, y = 0, width = love.graphics.getWidth()/2, height = love.graphics.getHeight()}  -- Right side
+        },
+        {
+            {x = 0, y = 0, width = love.graphics.getWidth()/2, height = love.graphics.getHeight()/2},  -- Top side - right
+            {x = love.graphics.getWidth()/2, y = 0, width = love.graphics.getWidth()/2, height = love.graphics.getHeight()/2},  -- Top side - left
+            {x = 0, y = love.graphics.getHeight()/2, width = love.graphics.getWidth(), height = love.graphics.getHeight()/2}  -- Bottom side
+        },
+        {
+            {x = 0, y = 0, width = love.graphics.getWidth()/2, height = love.graphics.getHeight()/2},  -- Top left
+            {x = love.graphics.getWidth()/2, y = 0, width = love.graphics.getWidth()/2, height = love.graphics.getHeight()/2},  -- Top right
+            {x = 0, y = love.graphics.getHeight()/2, width = love.graphics.getWidth()/2, height = love.graphics.getHeight()/2},  -- Bottom left
+            {x = love.graphics.getWidth()/2, y = love.graphics.getHeight()/2, width = love.graphics.getWidth()/2, height = love.graphics.getHeight()/2}  -- Bottom right
+        }
 
+    }
     -- Channels.InputCommuncicationChannel = love.thread.getChannel("InputServerThread")
     -- Channels.OutputCommuncicationChannel = love.thread.getChannel("OutputServerThread")
     -- Channels.GameChannel = love.thread.getChannel("GameServerThread")
@@ -283,7 +307,7 @@ end
 
 function love.draw()
     local large_sreen_width = 2*math.pi*love.graphics.getWidth()/LocalPlayer.fov
-    if Game.InHostedGame or Game.InClientGame and not Game.IsPaused then
+    if (Game.InHostedGame or Game.InClientGame and not Game.IsPaused) and not Game.IsSplitscreen then
         Draw.InGame({
             Textures = Textures,                     -- your textures table
             player = LocalPlayer,                         -- your player table
@@ -297,13 +321,27 @@ function love.draw()
             Entities = Entities,                      -- your entities table
             Players = Players
    })
+    elseif Game.IsSplitscreen and not Game.IsPaused then     
+        Draw.InGameSplitscreen({
+            Textures = Textures,  -- your textures table
+            player = LocalPlayer,                         -- your player table
+            fps = fps,                               -- your current FPS value
+            Game = Game,                           -- your debug text/variable
+            Walls = Map.walls.list,                           -- your walls table
+            screen_width = love.graphics.getWidth(),
+            screen_height = love.graphics.getHeight(),
+            large_sreen_width = large_sreen_width,   -- your large screen width variable
+            WallsHeight = WallsHeight,               -- your WallsHeight variable
+            Entities = Entities,                      -- your entities table
+            Players = Players
+        })
     elseif Game.IsLoading then
         Draw.LoadingScreen()
     else    --MM for now I guess
-        love.graphics.setCanvas(InGameCanvas)  -- Set the canvas as the target
+        love.graphics.setCanvas(BGCanvas)  -- Set the canvas as the target
         love.graphics.clear(0, 0, 0, 0)    -- Clear it (transparent)
         love.graphics.setCanvas()            -- Reset to the default screen
-        InGameCanvas:renderTo(function ()
+        BGCanvas:renderTo(function ()
             Draw.InGame({
                 Textures = Textures,  -- your textures table
                 player = LocalPlayer,                         -- your player table
@@ -319,14 +357,45 @@ function love.draw()
            })
         end)
             -- Draw the blurred canvas to the screen
-        love.graphics.setShader(blurShader)
-        love.graphics.draw(InGameCanvas, 0, 0)
-        love.graphics.setShader()  -- Reset shader for further drawing
+        love.graphics.setShader(blurShader)  -- Set the shader for the canvas
+        love.graphics.draw(BGCanvas, 0, 0)
+        love.graphics.setShader()  -- Reset the shader
+        love.graphics.setCanvas()
         Draw:Menu(Game.Buttons)
     end
 end
 
-
+function love.joystickadded( joystick )
+    print("Joystick added: " .. joystick:getName(), joystick:getID())
+    if joystick:isGamepad() then
+        if joystick:getID() == 1 then
+            print("Joystick is already assigned to the local player")
+            LocalPlayer.joystick = joystick  -- Assign the joystick to the local player
+        else
+            local assigned = {}
+            for _, v in ipairs(Players.list) do
+                assigned[v.number] = true
+            end
+            local new_number = 1
+            while assigned[new_number] do
+                new_number = new_number + 1
+            end
+            Players.list[new_number] = Player.createPlayer(new_number, world, nil, joystick)  -- Create a new player with the joystick
+            -- joystick.Player = Players.list[new_number]  -- Assign the player to the joystick
+            -- print(joystick.Player.joystick.Player.joystick)
+        end
+    end
+end
+function love.joystickremoved( joystick )
+    print("Joystick removed: " .. joystick:getName(), joystick:getID())
+    for i, player in ipairs(Players.list) do
+        if player.joystick == joystick then
+            player:destroy()  -- Destroy the player associated with the joystick
+            table.remove(Players.list, i)  -- Remove the player from the list
+            break
+        end
+    end
+end
 
 
 function love.keypressed(key)
@@ -334,11 +403,13 @@ function love.keypressed(key)
         love.window.close()
     end
     if key == "c" then
+---@diagnostic disable-next-line: undefined-field
         if Game.UI.crosshair == Textures.crosshairTexture then
             Game.UI.crosshair = "internal"
             love.mouse.setCursor(love.mouse.getSystemCursor("sizeall"))
         else
             love.mouse.setCursor(love.mouse.newCursor("assets/ayakaka.png", 200, 200))
+---@diagnostic disable-next-line: undefined-field
             Game.UI.crosshair = Textures.crosshairTexture
         end
     end
@@ -354,8 +425,20 @@ function love.keypressed(key)
         LocalPlayer.Glide = not LocalPlayer.Glide
     end
     if key == "kp+" then
-        LocalPlayer.Health = LocalPlayer.Health + 1
+        local assigned = {}
+        for _, v in ipairs(Players.list) do
+            assigned[v.number] = true
+        end
+        local new_number = 1
+        while assigned[new_number] do
+            new_number = new_number + 1
+        end
+        Players.list[new_number] = Player.createPlayer(new_number, world)
     elseif key == 'kp-' then
+        table.remove(Players.list, #Players.list)  -- Remove the player from the list
+    elseif key == 'kp*' then
+        LocalPlayer.Health = LocalPlayer.Health + 1
+    elseif key == 'kp/' then
         LocalPlayer.Health = LocalPlayer.Health - 1
     end
     if key == 'r' then
@@ -425,7 +508,7 @@ function beginContact(a, b, coll)
             --ADD THZE PLAYER HEALTHE SYSTEM LOLLL
             for key, value in pairs(Players.list) do
                 if value.fixture == other then
-                    value.Health = value.Health - Entities.list[bullet:getBody()].weapon.damage
+                    value.Health = value.Health - (Entities.list[bullet:getBody()] or LocalPlayer).weapon.damage
                     break
                 end
                 -- print(value.fixture, other)
@@ -438,27 +521,17 @@ function beginContact(a, b, coll)
 end
 
 
+
+
+
+
+
 -- function JoinGame()
 --     local ThreadScrpit = string.dump(Multiplayer.Thread)
 --     local MultplayerThread = love.thread.newThread(ThreadScrpit)
 --     MultplayerThread:start()
 --     Multiplayer.ThreadChannel = love.thread.getChannel("MultplayerThread")
 -- end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

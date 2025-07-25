@@ -14,6 +14,32 @@ function Draw.LoadingScreen()
     love.graphics.setBackgroundColor(0.2, 0.2, 0.9, 1)
 end
 
+function Draw.InGameSplitscreen(params)
+        love.graphics.setCanvas(InGameCanvas)  -- Set the canvas as the target
+        love.graphics.clear(0, 0, 0, 0)    -- Clear it (transparent)
+        love.graphics.setCanvas()
+        local pos = {x = 0, y = 0, width = love.graphics.getWidth(), height = love.graphics.getHeight()}
+        for _, player in pairs(params.Players.list) do
+            if player.peer == "local" then
+                
+                params.player = player
+                InGameCanvas:renderTo(function ()
+                    love.graphics.clear(0, 0, 0, 0)  -- Clear the canvas for each player
+                    Draw.InGame(params)
+                    love.graphics.setColor(1, 1, 1, 0.9)  -- Reset color to white
+                    love.graphics.setLineWidth(3)
+                    love.graphics.rectangle("line", -1, -1, love.graphics.getWidth() + 2, love.graphics.getHeight() + 2)  -- Draw a border around the canvas
+                end)
+                pos = params.Game.SplitscreenPos[#params.Players.list][_]
+                love.graphics.setColor(1, 1, 1, 1)  -- Reset color to white
+                love.graphics.draw(InGameCanvas, pos.x, pos.y, 0, pos.width/InGameCanvas:getWidth(), pos.height/InGameCanvas:getHeight())
+            end
+        end
+end
+
+
+
+
 function Draw.InGame(params)
 
     -- Extract variables from the passed table

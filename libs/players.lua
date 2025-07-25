@@ -1,10 +1,11 @@
 local Weapons = require "libs.weapons"
 local Player = {}
 
-function Player.createPlayer(number, world, peer)  --define xy angle but like im lazy
-    localplayer = {
+function Player.createPlayer(number, world, peer, joystick)  --define xy angle but like im lazy
+    local localplayer = {
         number = number,
         peer = peer or "local",
+        joystick = joystick ,  -- Joystick object if available
         x = 90,
         y = 204,
         angle = -32*math.pi/180 ,

@@ -1,3 +1,4 @@
+---@diagnostic disable: deprecated
 local InGame = {}
 
 
@@ -125,16 +126,9 @@ function InGame.updateHost(params)
     --update othe players
     if Game.IsPublic then
         Multiplayer.ServerReceive(dt, players, Channels, Player, Game, Entities)
-        for _, p in ipairs(players.list) do
-            if p.peer ~= "local" then
-                p.body:setLinearVelocity(
-                    math.cos(p.dir) * p.moveSpeed * dt,
-                    math.sin(p.dir) * p.moveSpeed * dt
-                )
-            end
-        end
     end
-
+    
+    InGame.UpdatePlayers(params)
 
     world:update(dt)
     for _, p in ipairs(players.list) do
@@ -447,7 +441,29 @@ function InGame.updateClient(params)
     end
 end
 
-
+function InGame.UpdatePlayers(params)
+    for _, player in ipairs(params.players.list) do
+        if player.peer == "local" then
+            if player.joystick then
+                local v1, v2, v3, v4, v5, v6 = player.joystick:getAxes()
+                player.angle = player.angle - v3 * params.dt * 12
+                player.dir = player.angle + math.atan2(v1, v2)  -- Assuming v1 is x-axis and v2 is y-axis
+                local movement = v1 ~= 0 or v2 ~= 0
+                player.moveSpeed = player.isZooming and 1100 or (player.joystick:isGamepadDown('leftstick') and 4400 or movement and 2200 or 0) * math.sqrt(v1^2 + v2^2)
+                player.body:setLinearVelocity(
+                    math.cos(player.dir) * player.moveSpeed * params.dt,
+                    math.sin(player.dir) * player.moveSpeed * params.dt
+                )
+                params.Game.Debug = player.moveSpeed .. math.sqrt(v1^2 + v2^2)
+            end
+        else
+            player.body:setLinearVelocity(
+                math.cos(player.dir) * player.moveSpeed * params.dt,
+                math.sin(player.dir) * player.moveSpeed * params.dt
+            )
+        end
+    end
+end
 
 function InGame.CreateLocalGame(params)
     local world = params.world
