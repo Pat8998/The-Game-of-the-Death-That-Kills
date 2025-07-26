@@ -6,6 +6,7 @@ Textures = {
     -- bulletTexture = love.graphics.newImage("assets/bullet.png"),
     crosshairTexture = love.graphics.newImage("assets/crosshair.png"),
     ayakakaTexture = love.graphics.newImage("assets/ayakaka.png"),
+    floorTexture = love.graphics.newImage("assets/wall.png"),
     weapons = {
         Default = {
             normal = love.graphics.newImage("assets/rifle_n.png"),
@@ -23,5 +24,7 @@ Textures = {
     }
 }
 
+
+Textures.floorTexture:setWrap("repeat", "repeat")
 
 return Textures

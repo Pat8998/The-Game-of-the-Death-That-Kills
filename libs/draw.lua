@@ -68,6 +68,34 @@ function Draw.InGame(params)
     love.graphics.print("angle: " .. tostring(player.angle * 180 / math.pi), 0, 60)
     love.graphics.print(Game.Debug, 0, 80)
 
+    --FLOOR
+    do
+        love.graphics.setColor(0.1, 0.1, 1, 1)
+        local distfrimeye = 1.6 / math.sin((screen_height/screen_width) * player.fov / 2)
+        local widthdistance = 2 * distfrimeye * math.tan(player.fov / 2)
+        local pointdefuite = screen_width/2  + player.angle * screen_width / player.fov
+        love.graphics.print(widthdistance, 200, 200)
+        -- for i = -math.floor(widthdistance) - 1, math.floor(widthdistance) + 1 do
+        for i = -math.floor(screen_width/20), math.floor(screen_width/20)  do
+            local x = pointdefuite + i * screen_width / widthdistance
+            local x2 = pointdefuite + i * 20
+            local x3 = pointdefuite + (i+1) * screen_width / widthdistance
+            local x4 = pointdefuite + (i+1) * 20
+            love.graphics.line(x2, screen_height/2, x, screen_height)
+            local  vertices = {
+                { x2, screen_height/2, 0, 25 },
+                { x, screen_height, 0, 0 },
+                { x3, screen_height, 1, 0 },
+                { x4, screen_height/2, 1, 5 }
+            }
+            local mesh = love.graphics.newMesh(4, "fan", "dynamic")
+            mesh:setVertices(vertices)
+            mesh:setTexture(Textures.floorTexture)
+            love.graphics.draw(mesh)
+        end
+    end
+
+
     local TTD = {}
     local types = {
         "wall",
