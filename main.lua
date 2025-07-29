@@ -18,7 +18,7 @@ local enet = require "enet"  --put it in global to call it from libraries ???
 local json = require("libs.external.lunajson")
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
 local fps
-local WallsHeight = 2
+local WallsHeight = 3
 local test = "nil"
 local data = {}
 local Map = {walls = {list = {}}}
@@ -167,24 +167,7 @@ function love.load()
     
     InGameCanvas = love.graphics.newCanvas(love.graphics.getWidth(), love.graphics.getHeight())
     BGCanvas = love.graphics.newCanvas(love.graphics.getWidth(), love.graphics.getHeight())
-    blurShader = love.graphics.newShader[[
-        extern number blurSize;
-        vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords)
-        {
-            vec4 sum = vec4(0.0);
-            sum += Texel(texture, texture_coords + vec2(-blurSize, -blurSize)) * 0.05;
-            sum += Texel(texture, texture_coords + vec2( 0.0,    -blurSize)) * 0.09;
-            sum += Texel(texture, texture_coords + vec2( blurSize, -blurSize)) * 0.05;
-            sum += Texel(texture, texture_coords + vec2(-blurSize,  0.0))    * 0.09;
-            sum += Texel(texture, texture_coords)                          * 0.62;
-            sum += Texel(texture, texture_coords + vec2( blurSize,  0.0))    * 0.09;
-            sum += Texel(texture, texture_coords + vec2(-blurSize,  blurSize)) * 0.05;
-            sum += Texel(texture, texture_coords + vec2( 0.0,     blurSize)) * 0.09;
-            sum += Texel(texture, texture_coords + vec2( blurSize,  blurSize)) * 0.05;
-            return sum * color;
-        }
-    ]]
-    blurShader:send("blurSize", 1.0 / 100.0)
+    Textures.Shaders.blurShader:send("blurSize", 1.0 / 100.0)
 
 
 
@@ -306,7 +289,6 @@ end
 
 
 function love.draw()
-    local large_sreen_width = 2*math.pi*love.graphics.getWidth()/LocalPlayer.fov
     if (Game.InHostedGame or Game.InClientGame and not Game.IsPaused) and not Game.IsSplitscreen then
         Draw.InGame({
             Textures = Textures,                     -- your textures table
@@ -316,7 +298,6 @@ function love.draw()
             Walls = Map.walls.list,                           -- your walls table
             screen_width = love.graphics.getWidth(),
             screen_height = love.graphics.getHeight(),
-            large_sreen_width = large_sreen_width,   -- your large screen width variable
             WallsHeight = WallsHeight,               -- your WallsHeight variable
             Entities = Entities,                      -- your entities table
             Players = Players
@@ -330,7 +311,6 @@ function love.draw()
             Walls = Map.walls.list,                           -- your walls table
             screen_width = love.graphics.getWidth(),
             screen_height = love.graphics.getHeight(),
-            large_sreen_width = large_sreen_width,   -- your large screen width variable
             WallsHeight = WallsHeight,               -- your WallsHeight variable
             Entities = Entities,                      -- your entities table
             Players = Players
@@ -350,14 +330,13 @@ function love.draw()
                 Walls = Map.walls.list,                           -- your walls table
                 screen_width = love.graphics.getWidth(),
                 screen_height = love.graphics.getHeight(),
-                large_sreen_width = large_sreen_width,   -- your large screen width variable
                 WallsHeight = WallsHeight,               -- your WallsHeight variable
                 Entities = Entities,                      -- your entities table
                 Players = Players
            })
         end)
             -- Draw the blurred canvas to the screen
-        love.graphics.setShader(blurShader)  -- Set the shader for the canvas
+        love.graphics.setShader(Textures.Shaders.blurShader)  -- Set the shader for the canvas
         love.graphics.draw(BGCanvas, 0, 0)
         love.graphics.setShader()  -- Reset the shader
         love.graphics.setCanvas()
@@ -399,16 +378,16 @@ end
 
 function love.keypressed(key)
     if key == "end" then
-        love.window.close()
-    end
+            love.event.quit()
+    end 
     if key == "c" then
----@diagnostic disable-next-line: undefined-field
+                            ---@diagnostic disable-next-line: undefined-field
         if Game.UI.crosshair == Textures.crosshairTexture then
             Game.UI.crosshair = "internal"
             love.mouse.setCursor(love.mouse.getSystemCursor("sizeall"))
         else
-            love.mouse.setCursor(love.mouse.newCursor("assets/ayakaka.png", 200, 200))
----@diagnostic disable-next-line: undefined-field
+            love.mouse.setCursor(love.mouse.newCursor("assets/ayakaka.png", 10, 10))
+                            ---@diagnostic disable-next-line: undefined-field
             Game.UI.crosshair = Textures.crosshairTexture
         end
     end

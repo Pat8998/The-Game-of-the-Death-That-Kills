@@ -27,7 +27,7 @@ function InGame.updateHost(params)
     -- Update mouse and player angle
     if not love.keyboard.isDown("lalt") and love.window.hasFocus() then
         love.mouse.setGrabbed(true)
-        love.mouse.setVisible(false)
+        love.mouse.setVisible(Game.IsPaused)
         player.angle = player.angle - dt * (dmouse.x) * (player.isZooming and 0.5 or 1)
         if player.angle > 2 * math.pi then
             player.angle = player.angle - 2 * math.pi
@@ -78,6 +78,12 @@ function InGame.updateHost(params)
         elseif love.keyboard.isDown("q") then
             dir = dir + math.pi / 2
         end
+        if love.keyboard.isDown('lctrl') then
+            player.height = math.max(0.5, player.height - dt * 4)
+            player.moveSpeed = player.moveSpeed * 0.1
+        else 
+            player.height = math.min(1.6, player.height + dt * 4)
+        end
         
         player.body:setLinearVelocity(
             math.cos(dir) * player.moveSpeed * dt,
@@ -91,6 +97,7 @@ function InGame.updateHost(params)
     else
         player.isZooming = false
     end
+
 
     if mouse.lb then
         Game.Weapons.Shoot(player, Entities)
@@ -463,10 +470,10 @@ function InGame.UpdatePlayers(params)
                 end
                 player.dir = player.angle + math.atan2(v1, v2)  -- Assuming v1 is x-axis and v2 is y-axis
                 local movement = v1 ~= 0 or v2 ~= 0
-                player.moveSpeed = ((player.isZooming and movement) and 1100 or player.joystick:isGamepadDown('leftstick') and 4400 or movement and 2200 or 0) * (-math.max(math.abs(v1), math.abs(v2)))
+                player.moveSpeed = ((player.isZooming and movement) and 1100 or player.joystick:isGamepadDown('leftstick') and 4400 or movement and 2200 or 0) * (math.max(math.abs(v1), math.abs(v2)))
                 player.body:setLinearVelocity(
-                    math.cos(player.dir) * player.moveSpeed * params.dt,
-                    math.sin(player.dir) * player.moveSpeed * params.dt
+                    -math.cos(player.dir) * player.moveSpeed * params.dt,
+                    -math.sin(player.dir) * player.moveSpeed * params.dt
                 )
             end
             player.fov = player.isZooming and math.max(math.pi / 3, player.fov - math.pi / 6 * params.dt * 4) or math.min(math.pi / 2, player.fov + math.pi / 6 * params.dt * 4)

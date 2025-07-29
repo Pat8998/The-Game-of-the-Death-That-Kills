@@ -2,6 +2,8 @@
     "Lua.diagnostics.globals": [
         "love",
         "world",
-        "player"
+    ],
+    "Lua.diagnostics.disable": [
+        "deprecated"
     ]
 }

@@ -9,6 +9,8 @@ function Player.createPlayer(number, world, peer, joystick)  --define xy angle b
         x = 90,
         y = 204,
         angle = -32*math.pi/180 ,
+        pitch = 0,
+        height = 1.6,
         fov = math.pi/2,
         mx = 0,
         my = 0,

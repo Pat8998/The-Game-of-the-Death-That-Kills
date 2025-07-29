@@ -54,10 +54,11 @@ function Draw.InGame(params)
     local Walls             = params.Walls
     local screen_width      = params.screen_width
     local screen_height     = params.screen_height
-    local large_sreen_width = params.large_sreen_width
     local WallsHeight       = params.WallsHeight
     local Entities          = params.Entities
     local Players           = params.Players
+    
+    local large_sreen_width = 2*math.pi*love.graphics.getWidth()/player.fov
 
     -- Draw the player indicator and FPS/debug info
     love.graphics.setColor(255, 0, 0, 255)
@@ -71,28 +72,22 @@ function Draw.InGame(params)
     --FLOOR
     do
         love.graphics.setColor(0.1, 0.1, 1, 1)
-        local distfrimeye = 1.6 / math.sin((screen_height/screen_width) * player.fov / 2)
+        local distfrimeye = player.height / math.sin((screen_height/screen_width) * player.fov / 2)
         local widthdistance = 2 * distfrimeye * math.tan(player.fov / 2)
-        local pointdefuite = screen_width/2  + player.angle * screen_width / player.fov
-        love.graphics.print(widthdistance, 200, 200)
-        -- for i = -math.floor(widthdistance) - 1, math.floor(widthdistance) + 1 do
-        for i = -math.floor(screen_width/20), math.floor(screen_width/20)  do
-            local x = pointdefuite + i * screen_width / widthdistance
-            local x2 = pointdefuite + i * 20
-            local x3 = pointdefuite + (i+1) * screen_width / widthdistance
-            local x4 = pointdefuite + (i+1) * 20
-            love.graphics.line(x2, screen_height/2, x, screen_height)
-            local  vertices = {
-                { x2, screen_height/2, 0, 25 },
-                { x, screen_height, 0, 0 },
-                { x3, screen_height, 1, 0 },
-                { x4, screen_height/2, 1, 5 }
-            }
-            local mesh = love.graphics.newMesh(4, "fan", "dynamic")
-            mesh:setVertices(vertices)
-            mesh:setTexture(Textures.floorTexture)
-            love.graphics.draw(mesh)
-        end
+        love.graphics.print("", 200, 200, 0, 2 , 2)
+        local shader = Textures.Shaders.floorShader
+        shader:send("screenSize", {screen_width, screen_height})
+        shader:send("fov", player.fov)
+        shader:send("gridSize", 1)
+        shader:send("lineWidth", 0.02)
+        shader:send("cameraYaw", player.angle)
+        shader:send("cameraPitch", player.pitch)
+        shader:send("cameraPos", {-player.y, player.height, -player.x})
+        
+        love.graphics.setShader(shader)
+        -- love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+        love.graphics.draw(Textures.floorTexture, 0, 0, 0, screen_width, screen_height)
+        love.graphics.setShader()
     end
 
 
@@ -133,9 +128,7 @@ function Draw.InGame(params)
                     e = { x = object.pos[2][1] - player.x, y = object.pos[2][2] - player.y }
                 }
                 local angle = {
-                    ---@diagnostic disable-next-line: deprecated
                     s = math.atan2(relative_pos.s.y, relative_pos.s.x) - player.angle + player.fov / 2,
-                    ---@diagnostic disable-next-line: deprecated
                     e = math.atan2(relative_pos.e.y, relative_pos.e.x) - player.angle + player.fov / 2
                 }
                 if math.abs(angle.s - angle.e) > math.pi then
@@ -158,15 +151,27 @@ function Draw.InGame(params)
                 elseif screen_pos.s < -large_sreen_width + screen_width or screen_pos.e < -large_sreen_width + screen_width then
                     screen_pos.s, screen_pos.e = screen_pos.s + large_sreen_width, screen_pos.e + large_sreen_width
                 end
+                local vert_angle = {
+                    s= {b = math.atan((player.height) / dist.s),
+                        t = math.atan((WallsHeight - player.height) / dist.s)},
+                    e = {b = math.atan((player.height) / dist.e),
+                        t = math.atan((WallsHeight - player.height) / dist.e)}
+                }
                 local height = {
-                    s = player.ScaleFactor * WallsHeight * screen_height / dist.s,
-                    e = player.ScaleFactor * WallsHeight * screen_height / dist.e
+                    s = {
+                        b = screen_height / 2 + vert_angle.s.b * screen_height / ((screen_height/screen_width) * player.fov),
+                        t = screen_height / 2 - vert_angle.s.t * screen_height / ((screen_height/screen_width) * player.fov)
+                    },
+                    e = {
+                        b = screen_height / 2 + vert_angle.e.b * screen_height / ((screen_height/screen_width) * player.fov),
+                        t = screen_height / 2 - vert_angle.e.t * screen_height / ((screen_height/screen_width) * player.fov)
+                    }
                 }
                 local vertices = {
-                    screen_pos.s, screen_height / 2 + height.s,
-                    screen_pos.s, screen_height / 2 - height.s,
-                    screen_pos.e, screen_height / 2 - height.e,
-                    screen_pos.e, screen_height / 2 + height.e
+                    screen_pos.s, height.s.t,
+                    screen_pos.s, height.s.b,
+                    screen_pos.e, height.e.b,
+                    screen_pos.e, height.e.t
                 }
                 love.graphics.setColor(1, 63/255, 194/255)
                 love.graphics.polygon('fill', vertices)
@@ -204,7 +209,6 @@ function Draw.InGame(params)
                 x = x - player.x,
                 y = y - player.y
             }
-            ---@diagnostic disable-next-line: deprecated
             local angle = math.atan2(relative_pos.y, relative_pos.x) - player.angle + player.fov / 2
             local dist = math.sqrt(relative_pos.x^2 + relative_pos.y^2)
             local screen_pos = {
@@ -230,12 +234,15 @@ function Draw.InGame(params)
                 x = x - player.x,
                 y = y - player.y
             }
-            ---@diagnostic disable-next-line: deprecated
-            local angle = math.atan2(relative_pos.y, relative_pos.x) - player.angle + player.fov / 2
             local dist = math.sqrt(relative_pos.x^2 + relative_pos.y^2)
+            local angle = {y = math.atan2(relative_pos.y, relative_pos.x) - player.angle + player.fov / 2,
+                           p = { t = math.atan(((otherplayer.height) - player.height) / dist),
+                                 b = math.atan2(otherplayer.height , dist)}
+            }
             local screen_pos = {
-                x = screen_width - (angle) * screen_width / player.fov,
-                y = 500 * math.exp(-dist) + screen_height / 2
+                x = screen_width - (angle.y) * screen_width / player.fov,
+                -- y = 500 * math.exp(-dist) + screen_height / 2 
+                y = screen_height / 2 - angle.p.t * screen_height / ((screen_height/screen_width) * player.fov)
             }
             if screen_pos.x > large_sreen_width then
                 screen_pos.x = screen_pos.x - large_sreen_width
@@ -243,12 +250,15 @@ function Draw.InGame(params)
                 screen_pos.x = screen_pos.x + large_sreen_width
             end
             -- local w, h = otherplayer.shape:getRadius() * 2, otherplayer.shape:getRadius() * 2
-            local w, h = 2 * (math.atan(2/dist) * screen_width) / player.fov, 5 * screen_height / dist        --so far radius =2
+            local w, h = 2 * (math.atan(2/dist) * screen_width) / player.fov,        --so far radius is 2
+                         angle.p.b * screen_height / ((screen_height/screen_width) * player.fov)
             love.graphics.setColor(0.001, 1, 0.001)
             love.graphics.setLineWidth(5)
-            love.graphics.rectangle("line", screen_pos.x - w/2 , screen_pos.y - h/2, w, h)
+            love.graphics.rectangle("line", screen_pos.x - w/2 , screen_pos.y - h/2 , w, h)
             love.graphics.setColor(1, 1, 1, 0.5)
             love.graphics.draw(Textures.ayakakaTexture, screen_pos.x - w/2 , screen_pos.y - h/2, 0, w / Textures.ayakakaTexture:getWidth(), h / Textures.ayakakaTexture:getHeight())
+            love.graphics.setColor(1, 0.1, 0.1, 1)
+            love.graphics.print(otherplayer.number, screen_pos.x, screen_pos.y - h/2, 0.1 * math.sin(love.timer.getTime() * 10), 1.5, 1.5)
         end
     end
         HUD(
