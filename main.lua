@@ -24,6 +24,7 @@ local data = {}
 local Map = {walls = {list = {}}}
 local Entities = {}
 local Game = {
+    DelayedCallbacks = {},  -- Table to hold delayed callbacks
     UI = {
         crosshair = Textures().crosshairTexture,  -- Crosshair texture
         crosshairSize = 1,  -- Size of the crosshair

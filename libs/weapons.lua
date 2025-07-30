@@ -27,6 +27,7 @@ Weapons.list = {
         BulletDuration = 3,
         speed = 2,
         spread = 1*math.pi / 180,  -- Spread in rads
+        spreadA = 0,  -- Spread when aimed
         damage = 50,
     },
     Rifle = {
@@ -34,7 +35,7 @@ Weapons.list = {
         number = 3,
         shootDelay = 0.01,
         BulletDuration = 2,
-        speed = 0.7,
+        speed = 1.2,
         spread = 10*math.pi / 180,  -- Spread in rads
         damage = 5,
         mass = 25,
@@ -89,11 +90,7 @@ function Weapons.Shoot(player, Entities, weapon)
     if love.timer.getTime() > player.NextShoot and magazine ~= 0 and weapon.name ~= "Reload" then
         local bullets = (type(weapon.bullets) == "function" and weapon.bullets() or weapon.bullets) or 1  -- Call function if present
         local spread
-        if player.isZooming then
-            spread = weapon.spread/5  -- Use default weapon if player is zooming
-        else
-            spread = weapon.spread or 0  -- Use default weapon spread if not specified
-        end
+        spread = player.isZooming and (weapon.spreadA or weapon.spread /2 or 0) or (weapon.spread or 0)  -- Use spreadA if zooming, otherwise use spread
         repeat
             local body = love.physics.newBody(world, player.x, player.y, "dynamic")
             local fixture = love.physics.newFixture(body, Entities.defaultShapes.bullet, 1)

@@ -137,13 +137,27 @@ function InGame.updateHost(params)
     for _, p in ipairs(players.list) do
         p.x, p.y = p.body:getPosition()
         if p.Health <= 0 then
-            p.Health = p.maxHealth
-            p.body:setPosition(0, 150)
-            p.body:setLinearVelocity(0, 0)
-            p.body:setAngularVelocity(26)
-        end
+            table.insert(Game.DelayedCallbacks, 
+            {
+                t = love.timer.getTime() + 1,
+                callback = function()
+                p.Health = p.maxHealth
+                p.body:setPosition(0, 150)
+                p.body:setLinearVelocity(0, 0)
+                p.body:setAngularVelocity(26)
+                end
+            })
+            end
         -- p.angle = p.body:getAngle()
     end
+    for _, action in pairs(Game.DelayedCallbacks) do
+        if action.t <= love.timer.getTime() then
+            action.callback()
+            table.remove(Game.DelayedCallbacks, _)
+        end
+    end
+
+
     for _, e in pairs(Entities.list) do
         e.x, e.y = e.body:getPosition()
         e.angle = e.body:getAngle()
@@ -448,8 +462,13 @@ function InGame.UpdatePlayers(params)
     for _, player in ipairs(params.players.list) do
         if player.peer == "local" then
             if player.joystick then
-                local v1, v2, v3, v4, v5, v6 = player.joystick:getAxes()
-                player.isZooming = v5 == 1 
+		local lx = player.joystick:getGamepadAxis('leftx')
+		local ly = player.joystick:getGamepadAxis('lefty')
+		local rx = player.joystick:getGamepadAxis('rightx')
+		local lt = player.joystick:getGamepadAxis('triggerleft')
+		local rt = player.joystick:getGamepadAxis('triggerright')
+
+                player.isZooming = lt == 1 
                 if player.joystick:isGamepadDown('rightshoulder') and player.NextWeaponSwitch then
                     params.Game.Weapons.nextWeapon(player)
                     player.NextWeaponSwitch = false
@@ -458,19 +477,19 @@ function InGame.UpdatePlayers(params)
                     player.NextWeaponSwitch = false
                 elseif not player.joystick:isGamepadDown('leftshoulder') and not player.joystick:isGamepadDown('rightshoulder') then
                     player.NextWeaponSwitch = true
-                    if v6 == 1 then 
+                    if rt == 1 then 
                         params.Game.Weapons.Shoot(player, params.Entities)
                     end
                 end
-                player.angle = player.angle - v3 * params.dt * (player.isZooming and 4 or 12)
+                player.angle = player.angle - rx * params.dt * (player.isZooming and 4 or 12)
                 if player.angle > 2 * math.pi then
                     player.angle = player.angle - 2 * math.pi
                 elseif player.angle < -2 * math.pi then  -- Assuming you want to normalize negative angles too
                     player.angle = player.angle + 2 * math.pi
                 end
-                player.dir = player.angle + math.atan2(v1, v2)  -- Assuming v1 is x-axis and v2 is y-axis
-                local movement = v1 ~= 0 or v2 ~= 0
-                player.moveSpeed = ((player.isZooming and movement) and 1100 or player.joystick:isGamepadDown('leftstick') and 4400 or movement and 2200 or 0) * (math.max(math.abs(v1), math.abs(v2)))
+                player.dir = player.angle + math.atan2(lx, ly)
+                local movement = lx ~= 0 or ly ~= 0
+                player.moveSpeed = ((player.isZooming and movement) and 1100 or player.joystick:isGamepadDown('leftstick') and 4400 or movement and 2200 or 0) * (math.max(math.abs(lx), math.abs(ly)))
                 player.body:setLinearVelocity(
                     -math.cos(player.dir) * player.moveSpeed * params.dt,
                     -math.sin(player.dir) * player.moveSpeed * params.dt

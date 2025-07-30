@@ -255,8 +255,9 @@ function Draw.InGame(params)
             love.graphics.setColor(0.001, 1, 0.001)
             love.graphics.setLineWidth(5)
             love.graphics.rectangle("line", screen_pos.x - w/2 , screen_pos.y - h/2 , w, h)
-            love.graphics.setColor(1, 1, 1, 0.5)
-            love.graphics.draw(Textures.ayakakaTexture, screen_pos.x - w/2 , screen_pos.y - h/2, 0, w / Textures.ayakakaTexture:getWidth(), h / Textures.ayakakaTexture:getHeight())
+            love.graphics.setColor(1, 1, 1, otherplayer.Health > 0 and 0.5 or 2)
+            local texture = otherplayer.Health > 0 and Textures.ayakakaTexture or Textures.deathTexture
+            love.graphics.draw(texture, screen_pos.x - w/2 , screen_pos.y - h/2, 0, w / texture:getWidth(), h / texture:getHeight())
             love.graphics.setColor(1, 0.1, 0.1, 1)
             love.graphics.print(otherplayer.number, screen_pos.x, screen_pos.y - h/2, 0.1 * math.sin(love.timer.getTime() * 10), 1.5, 1.5)
         end
@@ -329,7 +330,9 @@ function HUD(LocalPlayer, Game)
     love.graphics.setColor(math.abs(LocalPlayer.Health / LocalPlayer.maxHealth - 1), LocalPlayer.Health / LocalPlayer.maxHealth, 0, 1)
     love.graphics.print(tostring(LocalPlayer.Health), size * screen_width / 10 + 30, screen_height -27)
 
-
+    if LocalPlayer.Health <= 0 then
+        love.graphics.draw(Textures.deathTexture, 0,0, 0.1 * math.sin(love.timer.getTime() * 10), screen_width / Textures.deathTexture:getWidth(), screen_height/Textures.deathTexture:getHeight(), 0, 0, nil, nil, nil)
+    end
 
     -- DrawRotatedRectangle("fill", player.x + 25, -player.y + 200, 10, 1, player.angle)
     

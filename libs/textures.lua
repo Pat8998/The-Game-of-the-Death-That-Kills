@@ -6,6 +6,7 @@ Textures = {
     -- bulletTexture = love.graphics.newImage("assets/bullet.png"),
     crosshairTexture = love.graphics.newImage("assets/crosshair.png"),
     ayakakaTexture = love.graphics.newImage("assets/ayakaka.png"),
+    deathTexture = love.graphics.newImage("assets/death.png"),
     floorTexture = love.graphics.newImage("assets/floor.png"),
     weapons = {
         Default = {
