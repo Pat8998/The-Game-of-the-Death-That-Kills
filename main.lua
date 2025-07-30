@@ -337,6 +337,7 @@ function love.draw()
            })
         end)
             -- Draw the blurred canvas to the screen
+---@diagnostic disable-next-line: undefined-field
         love.graphics.setShader(Textures.Shaders.blurShader)  -- Set the shader for the canvas
         love.graphics.draw(BGCanvas, 0, 0)
         love.graphics.setShader()  -- Reset the shader

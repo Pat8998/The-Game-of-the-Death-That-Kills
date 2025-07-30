@@ -17,7 +17,7 @@ Weapons.list = {
         BulletDuration = 0.5,
         speed = 0.1,
         spread = 15*math.pi / 180,  -- Spread in rads
-        damage = 30,
+        damage = 19,
         bullets = function() return 2 + math.random(3) end,  -- Number of bullets shot at once
     },
     LongRifle = {
