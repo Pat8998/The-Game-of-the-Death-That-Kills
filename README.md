@@ -18,12 +18,17 @@ https://www.love2d.org/wiki/Building_L%C3%96VE
 https://github.com/love2d/megasource
 
 ## To Do List :
-
- - fix the jittering of the walls (duplicated walls I can't seem to be able to detect)
  - make the bullets look realistic
  - do things when they collide walls
- - texture walls (I mean put real textures cause right now they're ugly)
+ - texture walls (texture which are my own)
  - Do the 3D as shader (not sure if that's possible)
+
+ - ### Ideas : 
+    - nuumbers on hit
+    - score
+    - objects/ power-up (different caractters)
+    - real map / story mode
+
  - ### To fix :
 
     - stutter/lag when too many entities (multi - client)
