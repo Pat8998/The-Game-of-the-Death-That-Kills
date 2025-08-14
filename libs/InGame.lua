@@ -25,7 +25,7 @@ function InGame.updateHost(params)
     local Map = params.Map
 
     -- Update mouse and player angle
-    if not love.keyboard.isDown("lalt") and love.window.hasFocus() then
+    if not (love.keyboard.isDown("lalt") or Game.IsMobile) and love.window.hasFocus() then
         love.mouse.setGrabbed(true)
         love.mouse.setVisible(Game.IsPaused)
         player.angle = player.angle - dt * (dmouse.x) * (player.isZooming and 0.5 or 1)
@@ -39,16 +39,18 @@ function InGame.updateHost(params)
         elseif mouse.x >= love.graphics.getWidth() - 1 then
             love.mouse.setPosition(0, mouse.y)
         end
+        --player.pitch= mouse.y/10
         mouse.x, mouse.y = love.mouse.getPosition()
     else
         love.mouse.setGrabbed(false)
         love.mouse.setVisible(true)
+        Game.TouchScreen.handle(params)
     end
 
     -- Update movement based on keys pressed
 
-    do
-        local movement = love.keyboard.isDown("z") or love.keyboard.isDown("s") or love.keyboard.isDown("d") or love.keyboard.isDown("q")
+    if not Game.IsMobile then
+        local movement = love.keyboard.isDown("z") or love.keyboard.isDown("s") or love.keyboard.isDown("d") or love.keyboard.isDown("q") --or love.keyboard.isScancodeDown('volumeup')
         if player.isZooming and (movement) then
             player.moveSpeed = 1100
         elseif (love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")) and movement then
@@ -84,11 +86,7 @@ function InGame.updateHost(params)
         else 
             player.height = math.min(1.6, player.height + dt * 4)
         end
-        
-        player.body:setLinearVelocity(
-            math.cos(dir) * player.moveSpeed * dt,
-            math.sin(dir) * player.moveSpeed * dt
-        )
+        player.dir = dir
     end
 
 
@@ -121,9 +119,8 @@ function InGame.updateHost(params)
         else
             coucou = "Not in hosted game"
         end
-        Game.Debug = player.weapon.name .. "\n \n" .. coucou
+        -- Game.Debug = player.weapon.name .. "\n \n" .. coucou .. math.deg(player.pitch)
     end
-
 
 
     --update othe players
@@ -462,11 +459,11 @@ function InGame.UpdatePlayers(params)
     for _, player in ipairs(params.players.list) do
         if player.peer == "local" then
             if player.joystick then
-		local lx = player.joystick:getGamepadAxis('leftx')
-		local ly = player.joystick:getGamepadAxis('lefty')
-		local rx = player.joystick:getGamepadAxis('rightx')
-		local lt = player.joystick:getGamepadAxis('triggerleft')
-		local rt = player.joystick:getGamepadAxis('triggerright')
+                local lx = player.joystick:getGamepadAxis('leftx')
+                local ly = player.joystick:getGamepadAxis('lefty')
+                local rx = player.joystick:getGamepadAxis('rightx')
+                local lt = player.joystick:getGamepadAxis('triggerleft')
+                local rt = player.joystick:getGamepadAxis('triggerright')
 
                 player.isZooming = lt == 1 
                 if player.joystick:isGamepadDown('rightshoulder') and player.NextWeaponSwitch then
@@ -487,16 +484,16 @@ function InGame.UpdatePlayers(params)
                 elseif player.angle < -2 * math.pi then  -- Assuming you want to normalize negative angles too
                     player.angle = player.angle + 2 * math.pi
                 end
-                player.dir = player.angle + math.atan2(lx, ly)
+                player.dir = player.angle + math.atan2(lx, ly) + math.pi
                 local movement = lx ~= 0 or ly ~= 0
                 player.moveSpeed = ((player.isZooming and movement) and 1100 or player.joystick:isGamepadDown('leftstick') and 4400 or movement and 2200 or 0) * (math.max(math.abs(lx), math.abs(ly)))
-                player.body:setLinearVelocity(
-                    -math.cos(player.dir) * player.moveSpeed * params.dt,
-                    -math.sin(player.dir) * player.moveSpeed * params.dt
-                )
             end
             player.fov = player.isZooming and math.max(math.pi / 3, player.fov - math.pi / 6 * params.dt * 4) or math.min(math.pi / 2, player.fov + math.pi / 6 * params.dt * 4)
             player.ScaleFactor = player.isZooming and math.min(3, player.ScaleFactor + params.dt * 4) or math.max(2, player.ScaleFactor - params.dt * 4)
+            player.body:setLinearVelocity(
+                math.cos(player.dir) * player.moveSpeed * params.dt,
+                math.sin(player.dir) * player.moveSpeed * params.dt
+            )
         else
             player.body:setLinearVelocity(
                 math.cos(player.dir) * player.moveSpeed * params.dt,

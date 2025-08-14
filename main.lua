@@ -13,6 +13,7 @@ local Player = require("libs.players")
 local Multiplayer = require("libs.multiplayer")
 local Client = require("libs.client")
 local Weapons = require("libs.weapons")
+local TouchScreen = require("libs.touchscreen")
 local Textures = function () return require('libs.textures') end
 local enet = require "enet"  --put it in global to call it from libraries ???
 local json = require("libs.external.lunajson")
@@ -57,8 +58,8 @@ local Game = {
         amount = 4,  -- Number of channels used in the game
     },       -- If I ever add another channel (for chat or smth) I have to up the number of channels in the connect (multiplayer.lua line 13)
     Weapons = Weapons,  -- Weapons module
+    TouchScreen = TouchScreen,
     Buttons = {},  -- Buttons table to hold all buttons
-
 }
 local Players = {
     list = {},
@@ -79,14 +80,26 @@ local Buttons = {}
 -- initialization
 function love.load()
     do
-        local desktopWidth, desktopHeight = love.window.getDesktopDimensions() 
+        local desktopWidth, desktopHeight = math.max(love.window.getDesktopDimensions()), math.min(love.window.getDesktopDimensions()) 
         love.window.setMode(desktopWidth, desktopHeight, {fullscreen = false})
     end
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
-    local screen_width, screen_height = love.graphics.getWidth(), love.graphics.getHeight()
 ---@diagnostic disable-next-line: cast-local-type
     Textures = Textures()
+    Game.IsMobile = love.system.getOS() == 'Android' or love.system.getOS() == 'iOS'
+    if Game.IsMobile then
+        love.window.setMode(1920, 1080, {fullscreen = true})
+        --love.system.vibrate(1)
+    end
+    local screen_width, screen_height = love.graphics.getDimensions()
     Game.Buttons = {
+        Debug = Button:new(10, 10, 10, 10, "debug", function()
+            love.system.vibrate(0.1)
+            love.window.setMode(2560, 1440, {fullscreen = true})
+            Game.IsMobile = not Game.IsMobile
+            --love.graphics.setDPIScale(720)
+            
+        end),
         Quit = Button:new(screen_width/2 -100, 200, 200, 50, "Quit", function()
             love.event.quit()
         end),
@@ -213,6 +226,9 @@ function love.load()
         }
 
     }
+    if Game.IsMobile then
+        LocalPlayer.weapon = Weapons.list.Rifle  -- Set the default weapon for mobile
+    end
     -- Channels.InputCommuncicationChannel = love.thread.getChannel("InputServerThread")
     -- Channels.OutputCommuncicationChannel = love.thread.getChannel("OutputServerThread")
     -- Channels.GameChannel = love.thread.getChannel("GameServerThread")
@@ -378,7 +394,7 @@ function love.joystickremoved( joystick )
 end
 
 
-function love.keypressed(key)
+function love.keypressed(key, scan)
     if key == "end" then
             love.event.quit()
     end 
@@ -400,6 +416,7 @@ function love.keypressed(key)
         Game.IsPaused = not Game.IsPaused
         love.mouse.setGrabbed(not Game.IsPaused)
         love.mouse.setVisible(Game.IsPaused)
+        love.system.vibrate(0.01)
     end
     if key == "g" then
         LocalPlayer.Glide = not LocalPlayer.Glide
@@ -429,6 +446,7 @@ function love.keypressed(key)
             Client.Shoot({name = 'Reload'}, Game, LocalPlayer)  -- This wont work I think best is to createe a reload weapon
         end
     end
+    Game.Debug = scan
 end
 
 function love.wheelmoved(x, y)
@@ -439,9 +457,29 @@ function love.wheelmoved(x, y)
     end
 end
 
+function love.touchpressed(id, x, y, dx, dy, pressure)
+    local screen_width, screen_height = love.graphics.getDimensions()
+        Game.TouchScreen.Touches[id] = {
+        x = x,
+        y = y,
+        dx = dx,
+        dy = dy,
+        pressure = pressure,  -- Default pressure value
+        IsLeftJoy = x < screen_width / 2 and y > screen_height/2
+    }
+end
 
+function love.touchmoved( id, x, y, dx, dy, pressure )
+    Game.TouchScreen.Touches[id].x = x
+    Game.TouchScreen.Touches[id].y = y
+    Game.TouchScreen.Touches[id].dx = dx
+    Game.TouchScreen.Touches[id].dy = dy
+    Game.TouchScreen.Touches[id].pressure = pressure
+end
 
-
+function love.touchreleased(id , x, y, dx , dy , pressure )
+    Game.TouchScreen.Touches[id] = nil  -- Remove the touch data when released
+end
 
 
 function love.filedropped(file )

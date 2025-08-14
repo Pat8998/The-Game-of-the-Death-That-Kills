@@ -74,12 +74,16 @@ function Draw.InGame(params)
         love.graphics.setColor(0.1, 0.1, 1, 1)
         local distfrimeye = player.height / math.sin((screen_height/screen_width) * player.fov / 2)
         local widthdistance = 2 * distfrimeye * math.tan(player.fov / 2)
-        love.graphics.print("", 200, 200, 0, 2 , 2)
+        love.graphics.print(screen_width .. "\n" .. screen_height, 200, 200, 0, 2 , 2)
         local shader = Textures.Shaders.floorShader
-        shader:send("screenSize", {screen_width, screen_height})
+        if Game.IsMobile then
+            shader:send("screenSize", {love.window.getDesktopDimensions()})
+        else
+            shader:send("screenSize", {screen_width, screen_height})
+        end
         shader:send("fov", player.fov)
         shader:send("gridSize", 1)
-        shader:send("lineWidth", 0.02)
+        -- shader:send("lineWidth", 0.02)
         shader:send("cameraYaw", player.angle)
         shader:send("cameraPitch", player.pitch)
         shader:send("cameraPos", {-player.y, player.height, -player.x})

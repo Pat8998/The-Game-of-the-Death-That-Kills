@@ -40,7 +40,7 @@ vec4 effect(vec4 color, Image tex, vec2 uv, vec2 screen_coords) {
 
     vec3 hit = cameraPos + ray * t;
 
-    float fade = max(min(sqrt(pow(hit.x - cameraPos.x, 2) + pow(hit.z - cameraPos.z, 2)) * 0.01, 2), 0.5);
+    float fade = max(min(sqrt(pow(hit.x - cameraPos.x, 2.0) + pow(hit.z - cameraPos.z, 2.0)) * 0.01, 2.0), 0.5);
 
     vec2 floorUV = hit.xz / gridSize;
     vec4 texColor = Texel(tex, floorUV);
