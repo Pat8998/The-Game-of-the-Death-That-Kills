@@ -200,7 +200,7 @@ function InGame.UpdateWhileLoading( params)
         -- print("Game.IsJoining: ", Game.IsJoining)
 
 
-    if love.keyboard.isDown("escape") then
+    if love.keyboard.isScancodeDown("escape") then
         Game.IsJoining = 0
         Game.IsLoading = false
         Game.InClientGame = false
@@ -208,6 +208,9 @@ function InGame.UpdateWhileLoading( params)
     elseif love.keyboard.isDown("l") then
         Game.IsJoining = 1
         Game.Server.ipaddr = 'localhost:6969'
+    elseif love.mouse.isDown(1) and Game.IsMobile then
+        love.system.vibrate(0.01)
+        love.keyboard.setTextInput( true )  -- Disable text input when clicking
     end
 
     if Game.IsJoining == 1 then
@@ -364,7 +367,7 @@ function InGame.updateClient(params)
                             angle = obj.angle or 0,
                             number = obj.number or 0,
                             --PLEASE I'd LIKE TO COPY EVERYTHING SO IT WONT BE AWfEFUL -> CLIENT PLAYER CREATE?
-                            life = obj.life or 50,
+                            Health = obj.Health or 50,
                             weapon = obj.weapon or 'default'
                         }
                         if obj.number == localplayer.number then
@@ -430,11 +433,13 @@ function InGame.updateClient(params)
                             angle = obj.angle or 0,
                             number = obj.number or 0,
                             fov = obj.fov or math.pi / 2,
+                            height = obj.height or 1.6,
                         }
                         if obj.number == localplayer.number then
                             localplayer.x = obj.x
                             localplayer.y = obj.y
                             localplayer.fov = obj.fov or localplayer.fov or math.pi / 2
+                            localplayer.height = obj.height or (love.keyboard.isDown("lctrl") and 0.5 or 1.6)
                         end
                     end
 

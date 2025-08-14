@@ -8,8 +8,10 @@ function Draw:Menu(Buttons)
     end
 end
 
-function Draw.LoadingScreen()
+function Draw.LoadingScreen(Game)
     love.graphics.print("DROP FILE", 500, 500)
+    love.graphics.setColor(1, 0, 0.1, 1)
+    love.graphics.print("IP :" .. Game.Server.ipaddr, 10, 20, 0, 2, 2)
     --Spin a Circle ??
     love.graphics.setBackgroundColor(0.2, 0.2, 0.9, 1)
 end
@@ -30,9 +32,11 @@ function Draw.InGameSplitscreen(params)
                 InGameCanvas:renderTo(function ()
                     love.graphics.clear(0, 0, 0, 0)  -- Clear the canvas for each player
                     Draw.InGame(params)
-                    love.graphics.setColor(1, 1, 1, 0.9)  -- Reset color to white
-                    love.graphics.setLineWidth(3)
-                    love.graphics.rectangle("line", -1, -1, love.graphics.getWidth() + 2, love.graphics.getHeight() + 2)  -- Draw a border around the canvas
+                    if #LocalPlayers > 1 then
+                        love.graphics.setColor(1, 1, 1, 0.9)  -- Reset color to white
+                        love.graphics.setLineWidth(3)
+                        love.graphics.rectangle("line", -1, -1, love.graphics.getWidth() + 2, love.graphics.getHeight() + 2)  -- Draw a border around the canvas
+                    end
                 end)
                 pos = params.Game.SplitscreenPos[#LocalPlayers][_]
                 love.graphics.setColor(1, 1, 1, 1)  -- Reset color to white
@@ -229,8 +233,9 @@ function Draw.InGame(params)
 
         else
             local otherplayer = object
+            otherplayer.height = otherplayer.height or 1.6  -- Default height if not specified
+            otherplayer.Health = otherplayer.Health or 100  -- Default health if not specified
             -- Draw other players
-            -- print(otherplayer.y)
             local x, y = otherplayer.x, otherplayer.y
             love.graphics.points(x + 25, -y + 200)
             

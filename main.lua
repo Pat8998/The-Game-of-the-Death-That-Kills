@@ -36,11 +36,11 @@ local Game = {
     IsLoading = false,
     IsPublic = false,
     IsConnectedToHost = false,
-    IsSplitscreen = false,
+    IsSplitscreen = true,
     InMM = false, --For now pause menu is main menu but it'll change
     IsJoining = 0,
     Server = {
-        ipaddr = "localhost:6789",
+        ipaddr = "localhost:6878",
         host = nil,
         peer = nil,  --peer is the connection to the host
         ReceiveTimeout = 100, --time to wait for the host to respond
@@ -92,6 +92,7 @@ function love.load()
         --love.system.vibrate(1)
     end
     local screen_width, screen_height = love.graphics.getDimensions()
+    local buttonNumber = 5
     Game.Buttons = {
         Debug = Button:new(10, 10, 10, 10, "debug", function()
             love.system.vibrate(0.1)
@@ -100,10 +101,10 @@ function love.load()
             --love.graphics.setDPIScale(720)
             
         end),
-        Quit = Button:new(screen_width/2 -100, 200, 200, 50, "Quit", function()
+        Quit = Button:new(screen_width/2 -100,          2 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "Quit", function()
             love.event.quit()
         end),
-        StartGame = Button:new(screen_width/2 -100, 300, 200, 50, "Start game ❤!", function()
+        StartGame = Button:new(screen_width/2 -100,     3 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "Start game ❤!", function()
             print("Game Started !")
             Game.InHostedGame = true
             Game.IsPaused = false
@@ -117,17 +118,18 @@ function love.load()
                 Game.Buttons.SplitScreen.text = "SplitScreen"
                 Game.Buttons.SplitScreen.x = love.graphics.getWidth()/2 - 320
             end
-        end),
-        GenerateWalls = Button:new(screen_width/2 -100, 400, 200, 50, "Generate Walls", function()
+        end, {isActive = false}),  -- Button to toggle splitscreen
+        GenerateWalls = Button:new(screen_width/2 -100, 4 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "Generate Walls", function()
             Walls:clear(Map.walls.list)   -- Clear the walls list
             Map.walls.list = Walls:generate(56, 10, 2)
         end),
-        JoinGame = Button:new(screen_width/2 -100, 500, 200, 50, "Join Game", function ()
+        JoinGame = Button:new(screen_width/2 -100,      5 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "Join Game", function ()
         Game.IsLoading = true
+        Game.Server.ipaddr = ''
         --Game.Server.ipaddr = "localhost:6789"
         --Game.IsJoining = 1
         end),
-        SetPublic =  Button:new(screen_width/2 -100, 600, 200, 50, "SetPublic", function ()
+        SetPublic =  Button:new(screen_width/2 -100,    6 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "SetPublic", function ()
             Game.IsPublic = true
             -- love.thread.newThread(string.dump(Multiplayer.StartServer)):start(Game)
             --ABOVE LINE IF ANY LAG IS CAUSED WITHOUT THE THREAD
@@ -135,7 +137,7 @@ function love.load()
             Game.Buttons.SetPublic.isActive = false
             Game.Buttons.StopServer.isActive = true
         end),
-        StopServer = Button:new(screen_width/2 -100, 700, 200, 50, "StopServer", function ()
+        StopServer = Button:new(screen_width/2 -100,    7 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "StopServer", function ()
             Game.IsPublic = false
             -- love.thread.getChannel("MultplayerThread"):push(Game)
             --ABOVE LINES IF ANY LAG IS CAUSED WITHOUT THE THREAD
@@ -144,10 +146,10 @@ function love.load()
             Game.Buttons.SetPublic.isActive = true
             Game.Buttons.StopServer.isActive = false
         end, {isActive = false}),
-        ClientResume = Button:new(screen_width/2 -100, 300, 200, 50, "Resume", function ()
+        ClientResume = Button:new(screen_width/2 -100,      3 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "Resume", function ()
             Game.IsPaused = false
         end, {isActive = false}),
-        ClientDisconnect = Button:new(screen_width/2 -100, 500, 200, 50, "Disconnect", function ()
+        ClientDisconnect = Button:new(screen_width/2 -100,  5 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "Disconnect", function ()
                                                                                 ---@diagnostic disable-next-line: undefined-field
             Game.Server.peer:disconnect()
             repeat
@@ -333,7 +335,7 @@ function love.draw()
             Players = Players
         })
     elseif Game.IsLoading then
-        Draw.LoadingScreen()
+        Draw.LoadingScreen(Game)
     else    --MM for now I guess
         love.graphics.setCanvas(BGCanvas)  -- Set the canvas as the target
         love.graphics.clear(0, 0, 0, 0)    -- Clear it (transparent)
@@ -413,9 +415,16 @@ function love.keypressed(key, scan)
         love.mouse.setPosition(love.graphics.getWidth()/2, love.graphics.getHeight()/2)
     end
     if key == "escape" then
-        Game.IsPaused = not Game.IsPaused
-        love.mouse.setGrabbed(not Game.IsPaused)
-        love.mouse.setVisible(Game.IsPaused)
+        if Game.IsLoading then 
+            Game.IsJoining = 0
+            Game.IsLoading = false
+            Game.InClientGame = false
+            Game.IsPaused = true
+        else
+            Game.IsPaused = not Game.IsPaused
+            love.mouse.setGrabbed(not Game.IsPaused)
+            love.mouse.setVisible(Game.IsPaused)
+        end
         love.system.vibrate(0.01)
     end
     if key == "g" then
@@ -447,6 +456,12 @@ function love.keypressed(key, scan)
         end
     end
     Game.Debug = scan
+end
+
+function love.textinput(text)
+    if Game.IsLoading then
+        Game.Server.ipaddr = Game.Server.ipaddr .. text  -- Append the text to the IP address
+    end
 end
 
 function love.wheelmoved(x, y)
