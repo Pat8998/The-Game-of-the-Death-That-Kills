@@ -12,7 +12,22 @@ function Draw.LoadingScreen(Game)
     love.graphics.print("DROP FILE", 500, 500)
     love.graphics.setColor(1, 0, 0.1, 1)
     love.graphics.print("IP :" .. Game.Server.ipaddr, 10, 20, 0, 2, 2)
+    
+    love.graphics.setColor(1, 0.7, 0.1, 1)
+    love.graphics.print(Game.Debug, 5, 5)
     --Spin a Circle ??
+    if Game.IsJoining > 0 then
+        love.graphics.setColor(1, 1, 1, 0.5)
+        local angle = math.sin(love.timer.getTime()) * 2 * math.pi
+        love.graphics.arc('line',
+            'open',
+            love.graphics.getWidth() - love.graphics.getWidth()/10,
+            love.graphics.getHeight()/10,
+            love.graphics.getHeight()/12,
+            math.fmod((love.timer.getTime())* math.pi * 2, 2 * math.pi),
+            math.fmod((love.timer.getTime())* math.pi * 2, 2 * math.pi) + math.pi *1.99,
+            math.sin(love.timer.getTime() * 4) * 8 + 11)
+    end
     love.graphics.setBackgroundColor(0.2, 0.2, 0.9, 1)
 end
 
@@ -296,6 +311,29 @@ function HUD(LocalPlayer, Game)
         love.graphics.draw(Textures.crosshairTexture, screen_width/2 - size * Textures.crosshairTexture:getWidth() / 2, screen_height/2 - size * Textures.crosshairTexture:getHeight() / 2)
     end
 
+    if Game.IsMobile then
+        --Joystick
+        for id, Touch in pairs(Game.TouchScreen.Touches) do
+            if Touch.IsLeftJoy then
+                local x, y = Touch.x - Touch.sx, Touch.y - Touch.sy
+                local angle = math.atan2(y, x)
+                local distance = math.sqrt(x^2 + y^2)
+                local radius = screen_height/7  -- Radius of the joystick area
+                local smallradius = radius / 4
+                if distance > radius - smallradius then
+                    x, y = (radius - smallradius) * math.cos(angle), (radius - smallradius) * math.sin(angle)  -- Limit the touch position to the joystick area
+                end
+                love.graphics.setColor(0.1, 0.1, 1, 0.5)
+                love.graphics.circle("fill", Touch.sx, Touch.sy, radius, 30)
+                love.graphics.setColor(1, 1, 1, 0.8)
+                love.graphics.circle("fill", Touch.sx + x, Touch.sy + y, smallradius, 30)
+            end
+            
+        end
+
+        --buttons
+        Draw:Menu(Game.Buttons.MobileButtons)
+    end
 
     --MINIMAP
     love.graphics.setColor(0, 0, 1, 1)

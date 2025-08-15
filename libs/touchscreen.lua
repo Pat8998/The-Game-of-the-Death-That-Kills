@@ -13,10 +13,12 @@ function TouchScreen.handle(params)
         -- Game.Debug = Game.Debug .. " X: " .. touch.x .. " Y: " .. touch.y .. "mx :" ..  touch.dx .. "my" .. touch.dy .. "\n"
 
         if touch.IsLeftJoy then
-                localplayer.dir = localplayer.angle + math.atan2(touch.dx, touch.dy) + math.pi
-                local movement = math.sqrt(touch.dx^2 + touch.dy^2) > 1  -- Calculate movement based on touch delta
-                localplayer.moveSpeed = ((localplayer.isZooming and movement) and 100 or 200) * (math.max(math.abs(touch.dx), math.abs(touch.dy)))
+            local lx, ly = touch.sx - touch.x, touch.sy - touch.y
+                localplayer.dir = localplayer.angle + math.atan2(lx, ly)
+                local movement = math.min(math.sqrt(lx^2 + ly^2) / (screen_height/8), 2)  -- Calculate movement based on touch delta
+                localplayer.moveSpeed = ((localplayer.isZooming and movement > 1) and 1100 or 2200) * (movement)
                 LJoyTouched = true
+                Game.Debug = movement
             else
                 localplayer.angle = localplayer.angle - touch.dx * params.dt
             end
@@ -28,4 +30,3 @@ end
 
 
 return TouchScreen
-

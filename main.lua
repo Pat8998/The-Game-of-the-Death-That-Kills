@@ -16,6 +16,7 @@ local Weapons = require("libs.weapons")
 local TouchScreen = require("libs.touchscreen")
 local Textures = function () return require('libs.textures') end
 local enet = require "enet"  --put it in global to call it from libraries ???
+local utf8 = require("utf8")
 local json = require("libs.external.lunajson")
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
 local fps
@@ -71,7 +72,6 @@ local Channels = {
     GameChannel = nil
 }
 local LocalPlayer = Players.list[0]
-local Buttons = {}
 --canvas is great
 --color mask for color
 
@@ -87,98 +87,7 @@ function love.load()
 ---@diagnostic disable-next-line: cast-local-type
     Textures = Textures()
     Game.IsMobile = love.system.getOS() == 'Android' or love.system.getOS() == 'iOS'
-    if Game.IsMobile then
-        love.window.setMode(1920, 1080, {fullscreen = true})
-        --love.system.vibrate(1)
-    end
-    local screen_width, screen_height = love.graphics.getDimensions()
-    local buttonNumber = 5
-    Game.Buttons = {
-        Debug = Button:new(10, 10, 10, 10, "debug", function()
-            love.system.vibrate(0.1)
-            love.window.setMode(2560, 1440, {fullscreen = true})
-            Game.IsMobile = not Game.IsMobile
-            --love.graphics.setDPIScale(720)
-            
-        end),
-        Quit = Button:new(screen_width/2 -100,          2 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "Quit", function()
-            love.event.quit()
-        end),
-        StartGame = Button:new(screen_width/2 -100,     3 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "Start game ❤!", function()
-            print("Game Started !")
-            Game.InHostedGame = true
-            Game.IsPaused = false
-        end),
-        SplitScreen = Button:new(screen_width/2 -320, 350, 200, 50, "SplitScreen", function()
-            Game.IsSplitscreen = not Game.IsSplitscreen
-            if Game.IsSplitscreen then
-                Game.Buttons.SplitScreen.text = "SingleScreen"
-                Game.Buttons.SplitScreen.x = love.graphics.getWidth()/2 + 120
-            else
-                Game.Buttons.SplitScreen.text = "SplitScreen"
-                Game.Buttons.SplitScreen.x = love.graphics.getWidth()/2 - 320
-            end
-        end, {isActive = false}),  -- Button to toggle splitscreen
-        GenerateWalls = Button:new(screen_width/2 -100, 4 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "Generate Walls", function()
-            Walls:clear(Map.walls.list)   -- Clear the walls list
-            Map.walls.list = Walls:generate(56, 10, 2)
-        end),
-        JoinGame = Button:new(screen_width/2 -100,      5 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "Join Game", function ()
-        Game.IsLoading = true
-        Game.Server.ipaddr = ''
-        --Game.Server.ipaddr = "localhost:6789"
-        --Game.IsJoining = 1
-        end),
-        SetPublic =  Button:new(screen_width/2 -100,    6 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "SetPublic", function ()
-            Game.IsPublic = true
-            -- love.thread.newThread(string.dump(Multiplayer.StartServer)):start(Game)
-            --ABOVE LINE IF ANY LAG IS CAUSED WITHOUT THE THREAD
-            Game.Server.host = Multiplayer.StartServer("*:6969", Game.enetChannels.amount)
-            Game.Buttons.SetPublic.isActive = false
-            Game.Buttons.StopServer.isActive = true
-        end),
-        StopServer = Button:new(screen_width/2 -100,    7 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "StopServer", function ()
-            Game.IsPublic = false
-            -- love.thread.getChannel("MultplayerThread"):push(Game)
-            --ABOVE LINES IF ANY LAG IS CAUSED WITHOUT THE THREAD
-            Game.Server.host = Game.Server.host:destroy()
-            print("Server stopped")
-            Game.Buttons.SetPublic.isActive = true
-            Game.Buttons.StopServer.isActive = false
-        end, {isActive = false}),
-        ClientResume = Button:new(screen_width/2 -100,      3 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "Resume", function ()
-            Game.IsPaused = false
-        end, {isActive = false}),
-        ClientDisconnect = Button:new(screen_width/2 -100,  5 * screen_height/(buttonNumber + 2) - screen_height/(buttonNumber + 3), 200, screen_height/(buttonNumber + 4), "Disconnect", function ()
-                                                                                ---@diagnostic disable-next-line: undefined-field
-            Game.Server.peer:disconnect()
-            repeat
-                                                                                ---@diagnostic disable-next-line: undefined-field
-                print("Waiting for disconnection...", Game.Server.peer:state())
-                Game.Server.host:service(100)  -- Ensure all messages are sent
-                                                                                ---@diagnostic disable-next-line: undefined-field
-            until Game.Server.peer:state() == "disconnected"
-            InGame.CreateLocalGame({
-                world = world,
-                Game = Game,
-                Players = Players,
-                Entities = Entities,
-                Player = Player,
-                Map = Map
-            })
-            LocalPlayer = Players.list[1]
-            Game.InClientGame = false
-            Game.Buttons.ClientResume.isActive = false
-            Game.Buttons.ClientDisconnect.isActive = false
-            Game.Buttons.StartGame.isActive = true
-            Game.Buttons.JoinGame.x = love.graphics.getWidth()/2 +110            -- ACTUALLY IT MAKES YOU CLICK ON JOIN  without
-            Game.Buttons.JoinGame.isActive = true
-            Game.Buttons.SetPublic.isActive = true
-            Game.Buttons.StopServer.isActive = false
-        end, {isActive = false}),
-
-
-    }
+    Game.Buttons.PauseMenu = Button.PauseMenu(Game, InGame, Players, Entities, Player, Map, Walls, Multiplayer)  -- Initialize buttons
 
     
     InGameCanvas = love.graphics.newCanvas(love.graphics.getWidth(), love.graphics.getHeight())
@@ -230,6 +139,9 @@ function love.load()
     }
     if Game.IsMobile then
         LocalPlayer.weapon = Weapons.list.Rifle  -- Set the default weapon for mobile
+        Game.IsSplitscreen = false  -- Disable splitscreen button on mobile
+        love.window.setMode(1920, 1080, {fullscreen = true})
+        Game.Buttons.MobileButtons = Button.MobileButtons(Game, LocalPlayer, Entities)  -- Initialize mobile buttons
     end
     -- Channels.InputCommuncicationChannel = love.thread.getChannel("InputServerThread")
     -- Channels.OutputCommuncicationChannel = love.thread.getChannel("OutputServerThread")
@@ -308,7 +220,7 @@ end
 
 
 function love.draw()
-    if (Game.InHostedGame or Game.InClientGame and not Game.IsPaused) and not Game.IsSplitscreen then
+    if (Game.InHostedGame or Game.InClientGame and not Game.IsPaused) and ( Game.InClientGame or not Game.IsSplitscreen) then
         Draw.InGame({
             Textures = Textures,                     -- your textures table
             player = LocalPlayer,                         -- your player table
@@ -360,14 +272,14 @@ function love.draw()
         love.graphics.draw(BGCanvas, 0, 0)
         love.graphics.setShader()  -- Reset the shader
         love.graphics.setCanvas()
-        Draw:Menu(Game.Buttons)
+        Draw:Menu(Game.Buttons.PauseMenu)
     end
 end
 
 function love.joystickadded( joystick )
     print("Joystick added: " .. joystick:getName(), joystick:getID())
     if joystick:isGamepad() then
-        if joystick:getID() == 0 then --To do tests put 1
+        if joystick:getID() == 1 and Game.IsMobile then --To do tests put 1
             LocalPlayer.joystick = joystick  -- Assign the joystick to the local player
         else
             local assigned = {}
@@ -381,13 +293,14 @@ function love.joystickadded( joystick )
             Players.list[new_number] = Player.createPlayer(new_number, world, nil, joystick)  -- Create a new player with the joystick
             -- joystick.Player = Players.list[new_number]  -- Assign the player to the joystick
             -- print(joystick.Player.joystick.Player.joystick)
+            Game.Buttons.PauseMenu.SplitScreen.isActive = true  -- Enable the splitscreen button
         end
     end
 end
 function love.joystickremoved( joystick )
     print("Joystick removed: " .. joystick:getName(), joystick:getID())
     for i, player in ipairs(Players.list) do
-        if player.joystick == joystick then
+        if player.joystick == joystick and player.number == LocalPlayer.number then
             player:destroy()  -- Destroy the player associated with the joystick
             table.remove(Players.list, i)  -- Remove the player from the list
             break
@@ -425,7 +338,21 @@ function love.keypressed(key, scan)
             love.mouse.setGrabbed(not Game.IsPaused)
             love.mouse.setVisible(Game.IsPaused)
         end
-        love.system.vibrate(0.01)
+        love.system.vibrate(0.01)    
+    elseif scan == "return" then
+        Game.IsJoining = 1
+        if Game.Server.ipaddr == "" then
+            Game.Server.ipaddr = 'localhost:6969'
+        end
+    elseif key == "backspace" then
+        -- get the byte offset to the last UTF-8 character in the string.
+        local byteoffset = utf8.offset(Game.Server.ipaddr, -1)
+
+        if byteoffset then
+            -- remove the last UTF-8 character.
+            -- string.sub operates on bytes rather than UTF-8 characters, so we couldn't do string.sub(text, 1, -2).
+            Game.Server.ipaddr = string.sub(Game.Server.ipaddr, 1, byteoffset - 1)
+        end
     end
     if key == "g" then
         LocalPlayer.Glide = not LocalPlayer.Glide
@@ -440,6 +367,7 @@ function love.keypressed(key, scan)
             new_number = new_number + 1
         end
         Players.list[new_number] = Player.createPlayer(new_number, world)
+        Game.Buttons.PauseMenu.SplitScreen.isActive = true  -- Enable the splitscreen button
     elseif key == 'kp-' then
         table.remove(Players.list, #Players.list)  -- Remove the player from the list
     elseif key == 'kp*' then
@@ -475,6 +403,8 @@ end
 function love.touchpressed(id, x, y, dx, dy, pressure)
     local screen_width, screen_height = love.graphics.getDimensions()
         Game.TouchScreen.Touches[id] = {
+        sx = x,
+        sy = y,
         x = x,
         y = y,
         dx = dx,

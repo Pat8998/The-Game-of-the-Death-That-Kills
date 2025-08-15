@@ -3,7 +3,7 @@ local InGame = {}
 
 
 function InGame.UpdateMenu(dt, Game, mouse)
-    for key, button in pairs(Game.Buttons) do
+    for key, button in pairs(Game.Buttons.PauseMenu) do
         button:update(mouse.x, mouse.y, mouse.lb)
     end
 end
@@ -29,11 +29,6 @@ function InGame.updateHost(params)
         love.mouse.setGrabbed(true)
         love.mouse.setVisible(Game.IsPaused)
         player.angle = player.angle - dt * (dmouse.x) * (player.isZooming and 0.5 or 1)
-        if player.angle > 2 * math.pi then
-            player.angle = player.angle - 2 * math.pi
-        elseif player.angle < -2 * math.pi then  -- Assuming you want to normalize negative angles too
-            player.angle = player.angle + 2 * math.pi
-        end
         if mouse.x <= 0 then
             love.mouse.setPosition(love.graphics.getWidth(), mouse.y)
         elseif mouse.x >= love.graphics.getWidth() - 1 then
@@ -49,7 +44,11 @@ function InGame.updateHost(params)
 
     -- Update movement based on keys pressed
 
-    if not Game.IsMobile then
+    if Game.IsMobile then
+        for _, button in pairs(Game.Buttons.MobileButtons) do
+            button:update(mouse.x, mouse.y, mouse.lb)
+        end
+    else
         local movement = love.keyboard.isDown("z") or love.keyboard.isDown("s") or love.keyboard.isDown("d") or love.keyboard.isDown("q") --or love.keyboard.isScancodeDown('volumeup')
         if player.isZooming and (movement) then
             player.moveSpeed = 1100
@@ -97,7 +96,7 @@ function InGame.updateHost(params)
     end
 
 
-    if mouse.lb then
+    if mouse.lb and not Game.IsMobile then
         Game.Weapons.Shoot(player, Entities)
     end
     
@@ -211,6 +210,8 @@ function InGame.UpdateWhileLoading( params)
     elseif love.mouse.isDown(1) and Game.IsMobile then
         love.system.vibrate(0.01)
         love.keyboard.setTextInput( true )  -- Disable text input when clicking
+    elseif love.mouse.isDown(2) then
+        Game.Server.ipaddr = love.system.getClipboardText()
     end
 
     if Game.IsJoining == 1 then
@@ -235,11 +236,11 @@ function InGame.UpdateWhileLoading( params)
                     print("We are player number", event.data)
                     localPlayer.number = tonumber(event.data) --actually might be sent every frame? ACTUALLY NO BC I SEND TO ALL PEERS
                     Game.IsLoading, Game.InClientGame, Game.IsJoining, Game.IsPaused = false, true, 0, false
-                    Game.Buttons.StartGame.isActive = false
-                    Game.Buttons.JoinGame.isActive = false
-                    Game.Buttons.SetPublic.isActive, Game.Buttons.StopServer.isActive = false, false
-                    Game.Buttons.ClientResume.isActive = true
-                    Game.Buttons.ClientDisconnect.isActive = true
+                    Game.Buttons.PauseMenu.StartGame.isActive = false
+                    Game.Buttons.PauseMenu.JoinGame.isActive = false
+                    Game.Buttons.PauseMenu.SetPublic.isActive, Game.Buttons.PauseMenu.StopServer.isActive = false, false
+                    Game.Buttons.PauseMenu.ClientResume.isActive = true
+                    Game.Buttons.PauseMenu.ClientDisconnect.isActive = true
                 else
                     print("error wtf")
                 end
@@ -462,6 +463,11 @@ end
 
 function InGame.UpdatePlayers(params)
     for _, player in ipairs(params.players.list) do
+        if player.angle > 2 * math.pi then
+            player.angle = player.angle - 2 * math.pi
+        elseif player.angle < -2 * math.pi then  -- Assuming you want to normalize negative angles too
+            player.angle = player.angle + 2 * math.pi
+        end
         if player.peer == "local" then
             if player.joystick then
                 local lx = player.joystick:getGamepadAxis('leftx')
