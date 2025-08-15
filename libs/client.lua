@@ -16,14 +16,14 @@ function Client.Shoot(weapon, Game, LocalPlayer)
     end
 end
 
-function Client.Move(dir, player, Game)
+function Client.Move(LocalPlayer, Game, dir)
     local data = ({
         type = "move",
-        dir = dir,
-        speed = player.moveSpeed,
-        angle = player.angle,
-        isZooming = player.isZooming,
-        weapon = player.weapon.name
+        dir =  dir or LocalPlayer.dir,
+        speed = LocalPlayer.moveSpeed,
+        angle = LocalPlayer.angle,
+        isZooming = LocalPlayer.isZooming,
+        weapon = LocalPlayer.weapon.name
     })
     -- print("Sending move data to server: " .. dir .. " " .. speed)
     Game.Server.peer:send(json.encode(data), Game.enetChannels.ActionChannel)

@@ -8,11 +8,60 @@ function Draw:Menu(Buttons)
     end
 end
 
-function Draw.LoadingScreen()
+function Draw.LoadingScreen(Game)
     love.graphics.print("DROP FILE", 500, 500)
+    love.graphics.setColor(1, 0, 0.1, 1)
+    love.graphics.print("IP :" .. Game.Server.ipaddr, 10, 20, 0, 2, 2)
+    
+    love.graphics.setColor(1, 0.7, 0.1, 1)
+    love.graphics.print(Game.Debug, 5, 5)
     --Spin a Circle ??
+    if Game.IsJoining > 0 then
+        love.graphics.setColor(1, 1, 1, 0.5)
+        local angle = math.sin(love.timer.getTime()) * 2 * math.pi
+        love.graphics.arc('line',
+            'open',
+            love.graphics.getWidth() - love.graphics.getWidth()/10,
+            love.graphics.getHeight()/10,
+            love.graphics.getHeight()/12,
+            math.fmod((love.timer.getTime())* math.pi * 2, 2 * math.pi),
+            math.fmod((love.timer.getTime())* math.pi * 2, 2 * math.pi) + math.pi *1.99,
+            math.sin(love.timer.getTime() * 4) * 8 + 11)
+    end
     love.graphics.setBackgroundColor(0.2, 0.2, 0.9, 1)
 end
+
+function Draw.InGameSplitscreen(params)
+        love.graphics.setCanvas(InGameCanvas)  -- Set the canvas as the target
+        love.graphics.clear(0, 0, 0, 0)    -- Clear it (transparent)
+        love.graphics.setCanvas()
+        local pos = {x = 0, y = 0, width = love.graphics.getWidth(), height = love.graphics.getHeight()}
+        local LocalPlayers = {}
+        for _, player in pairs(params.Players.list) do
+            if player.peer == "local" then
+                LocalPlayers[player.number] = player
+            end
+        end
+        for _, player in pairs(LocalPlayers) do
+                params.player = player
+                InGameCanvas:renderTo(function ()
+                    love.graphics.clear(0, 0, 0, 0)  -- Clear the canvas for each player
+                    Draw.InGame(params)
+                    if #LocalPlayers > 1 then
+                        love.graphics.setColor(1, 1, 1, 0.9)  -- Reset color to white
+                        love.graphics.setLineWidth(3)
+                        love.graphics.rectangle("line", -1, -1, love.graphics.getWidth() + 2, love.graphics.getHeight() + 2)  -- Draw a border around the canvas
+                    end
+                end)
+                pos = params.Game.SplitscreenPos[#LocalPlayers][_]
+                love.graphics.setColor(1, 1, 1, 1)  -- Reset color to white
+                love.graphics.draw(InGameCanvas, pos.x, pos.y, 0, pos.width/InGameCanvas:getWidth(), pos.height/InGameCanvas:getHeight())
+
+        end
+end
+
+
+
 
 function Draw.InGame(params)
 
@@ -24,10 +73,11 @@ function Draw.InGame(params)
     local Walls             = params.Walls
     local screen_width      = params.screen_width
     local screen_height     = params.screen_height
-    local large_sreen_width = params.large_sreen_width
     local WallsHeight       = params.WallsHeight
     local Entities          = params.Entities
     local Players           = params.Players
+    
+    local large_sreen_width = 2*math.pi*love.graphics.getWidth()/player.fov
 
     -- Draw the player indicator and FPS/debug info
     love.graphics.setColor(255, 0, 0, 255)
@@ -37,6 +87,32 @@ function Draw.InGame(params)
     love.graphics.print("y: " .. tostring(player.y), 0, 40)
     love.graphics.print("angle: " .. tostring(player.angle * 180 / math.pi), 0, 60)
     love.graphics.print(Game.Debug, 0, 80)
+
+    --FLOOR
+    do
+        love.graphics.setColor(0.1, 0.1, 1, 1)
+        local distfrimeye = player.height / math.sin((screen_height/screen_width) * player.fov / 2)
+        local widthdistance = 2 * distfrimeye * math.tan(player.fov / 2)
+        -- love.graphics.print(screen_width .. "\n" .. screen_height, 200, 200, 0, 2 , 2)
+        local shader = Textures.Shaders.floorShader
+        if Game.IsMobile then
+            shader:send("screenSize", {love.window.getDesktopDimensions()})
+        else
+            shader:send("screenSize", {screen_width, screen_height})
+        end
+        shader:send("fov", player.fov)
+        shader:send("gridSize", 1)
+        -- shader:send("lineWidth", 0.02)
+        shader:send("cameraYaw", player.angle)
+        shader:send("cameraPitch", player.pitch)
+        shader:send("cameraPos", {-player.y, player.height, -player.x})
+        
+        love.graphics.setShader(shader)
+        -- love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+        love.graphics.draw(Textures.floorTexture, 0, 0, 0, screen_width, screen_height)
+        love.graphics.setShader()
+    end
+
 
     local TTD = {}
     local types = {
@@ -75,9 +151,7 @@ function Draw.InGame(params)
                     e = { x = object.pos[2][1] - player.x, y = object.pos[2][2] - player.y }
                 }
                 local angle = {
-                    ---@diagnostic disable-next-line: deprecated
                     s = math.atan2(relative_pos.s.y, relative_pos.s.x) - player.angle + player.fov / 2,
-                    ---@diagnostic disable-next-line: deprecated
                     e = math.atan2(relative_pos.e.y, relative_pos.e.x) - player.angle + player.fov / 2
                 }
                 if math.abs(angle.s - angle.e) > math.pi then
@@ -100,15 +174,27 @@ function Draw.InGame(params)
                 elseif screen_pos.s < -large_sreen_width + screen_width or screen_pos.e < -large_sreen_width + screen_width then
                     screen_pos.s, screen_pos.e = screen_pos.s + large_sreen_width, screen_pos.e + large_sreen_width
                 end
+                local vert_angle = {
+                    s= {b = math.atan((player.height) / dist.s),
+                        t = math.atan((WallsHeight - player.height) / dist.s)},
+                    e = {b = math.atan((player.height) / dist.e),
+                        t = math.atan((WallsHeight - player.height) / dist.e)}
+                }
                 local height = {
-                    s = player.ScaleFactor * WallsHeight * screen_height / dist.s,
-                    e = player.ScaleFactor * WallsHeight * screen_height / dist.e
+                    s = {
+                        b = screen_height / 2 + vert_angle.s.b * screen_height / ((screen_height/screen_width) * player.fov),
+                        t = screen_height / 2 - vert_angle.s.t * screen_height / ((screen_height/screen_width) * player.fov)
+                    },
+                    e = {
+                        b = screen_height / 2 + vert_angle.e.b * screen_height / ((screen_height/screen_width) * player.fov),
+                        t = screen_height / 2 - vert_angle.e.t * screen_height / ((screen_height/screen_width) * player.fov)
+                    }
                 }
                 local vertices = {
-                    screen_pos.s, screen_height / 2 + height.s,
-                    screen_pos.s, screen_height / 2 - height.s,
-                    screen_pos.e, screen_height / 2 - height.e,
-                    screen_pos.e, screen_height / 2 + height.e
+                    screen_pos.s, height.s.t,
+                    screen_pos.s, height.s.b,
+                    screen_pos.e, height.e.b,
+                    screen_pos.e, height.e.t
                 }
                 love.graphics.setColor(1, 63/255, 194/255)
                 love.graphics.polygon('fill', vertices)
@@ -116,10 +202,6 @@ function Draw.InGame(params)
                 love.graphics.polygon('line', vertices)
                 
                 vertices = {
-                    -- { vertices[1], vertices[2], 0, 0 },
-                    -- { vertices[3], vertices[4], 0, 1 },
-                    -- { vertices[5], vertices[6], 1, 1 },
-                    -- { vertices[7], vertices[8], 1, 0 }
                     { vertices[1], vertices[2], 0, 1 },
                     { vertices[3], vertices[4], 0, 0 },
                     { vertices[5], vertices[6], 1, 0 },
@@ -146,7 +228,6 @@ function Draw.InGame(params)
                 x = x - player.x,
                 y = y - player.y
             }
-            ---@diagnostic disable-next-line: deprecated
             local angle = math.atan2(relative_pos.y, relative_pos.x) - player.angle + player.fov / 2
             local dist = math.sqrt(relative_pos.x^2 + relative_pos.y^2)
             local screen_pos = {
@@ -163,8 +244,9 @@ function Draw.InGame(params)
 
         else
             local otherplayer = object
+            otherplayer.height = otherplayer.height or 1.6  -- Default height if not specified
+            otherplayer.Health = otherplayer.Health or 100  -- Default health if not specified
             -- Draw other players
-            -- print(otherplayer.y)
             local x, y = otherplayer.x, otherplayer.y
             love.graphics.points(x + 25, -y + 200)
             
@@ -172,12 +254,14 @@ function Draw.InGame(params)
                 x = x - player.x,
                 y = y - player.y
             }
-            ---@diagnostic disable-next-line: deprecated
-            local angle = math.atan2(relative_pos.y, relative_pos.x) - player.angle + player.fov / 2
             local dist = math.sqrt(relative_pos.x^2 + relative_pos.y^2)
+            local angle = {y = math.atan2(relative_pos.y, relative_pos.x) - player.angle + player.fov / 2,
+                           p = { t = math.atan(((otherplayer.height) - player.height) / dist),
+                                 b = math.atan2(otherplayer.height , dist)}
+            }
             local screen_pos = {
-                x = screen_width - (angle) * screen_width / player.fov,
-                y = 500 * math.exp(-dist) + screen_height / 2
+                x = screen_width - (angle.y) * screen_width / player.fov,
+                y = screen_height / 2 - angle.p.t * screen_height / ((screen_height/screen_width) * player.fov)
             }
             if screen_pos.x > large_sreen_width then
                 screen_pos.x = screen_pos.x - large_sreen_width
@@ -185,12 +269,16 @@ function Draw.InGame(params)
                 screen_pos.x = screen_pos.x + large_sreen_width
             end
             -- local w, h = otherplayer.shape:getRadius() * 2, otherplayer.shape:getRadius() * 2
-            local w, h = 2 * (math.atan(2/dist) * screen_width) / player.fov, 5 * screen_height / dist        --so far radius =2
+            local w, h = 2 * (math.atan(2/dist) * screen_width) / player.fov,        --so far radius is 2
+                         angle.p.b * screen_height / ((screen_height/screen_width) * player.fov)
             love.graphics.setColor(0.001, 1, 0.001)
             love.graphics.setLineWidth(5)
-            love.graphics.rectangle("line", screen_pos.x - w/2 , screen_pos.y - h/2, w, h)
-            love.graphics.setColor(1, 1, 1, 0.5)
-            love.graphics.draw(Textures.ayakakaTexture, screen_pos.x - w/2 , screen_pos.y - h/2, 0, w / Textures.ayakakaTexture:getWidth(), h / Textures.ayakakaTexture:getHeight())
+            love.graphics.rectangle("line", screen_pos.x - w/2 , screen_pos.y - h/2 , w, h)
+            love.graphics.setColor(1, 1, 1, otherplayer.Health > 0 and 0.5 or 2)
+            local texture = otherplayer.Health > 0 and Textures.ayakakaTexture or Textures.deathTexture
+            love.graphics.draw(texture, screen_pos.x - w/2 , screen_pos.y - h/2, 0, w / texture:getWidth(), h / texture:getHeight())
+            love.graphics.setColor(1, 0.1, 0.1, 1)
+            love.graphics.print(otherplayer.number, screen_pos.x, screen_pos.y - h/2, 0.1 * math.sin(love.timer.getTime() * 10), 1.5, 1.5)
         end
     end
         HUD(
@@ -218,6 +306,29 @@ function HUD(LocalPlayer, Game)
         love.graphics.draw(Textures.crosshairTexture, screen_width/2 - size * Textures.crosshairTexture:getWidth() / 2, screen_height/2 - size * Textures.crosshairTexture:getHeight() / 2)
     end
 
+    if Game.IsMobile then
+        --Joystick
+        for id, Touch in pairs(Game.TouchScreen.Touches) do
+            if Touch.IsLeftJoy then
+                local x, y = Touch.x - Touch.sx, Touch.y - Touch.sy
+                local angle = math.atan2(y, x)
+                local distance = math.sqrt(x^2 + y^2)
+                local radius = screen_height/7  -- Radius of the joystick area
+                local smallradius = radius / 4
+                if distance > radius - smallradius then
+                    x, y = (radius - smallradius) * math.cos(angle), (radius - smallradius) * math.sin(angle)  -- Limit the touch position to the joystick area
+                end
+                love.graphics.setColor(0.1, 0.1, 1, 0.5)
+                love.graphics.circle("fill", Touch.sx, Touch.sy, radius, 30)
+                love.graphics.setColor(1, 1, 1, 0.8)
+                love.graphics.circle("fill", Touch.sx + x, Touch.sy + y, smallradius, 30)
+            end
+            
+        end
+
+        --buttons
+        Draw:Menu(Game.Buttons.MobileButtons)
+    end
 
     --MINIMAP
     love.graphics.setColor(0, 0, 1, 1)
@@ -233,7 +344,6 @@ function HUD(LocalPlayer, Game)
         local weaponShearing = {
             x = (LocalPlayer.moveSpeed / (LocalPlayer.isZooming and 22000 or 44000)) * math.sin(love.timer.getTime() * (LocalPlayer.moveSpeed / 550)) -- bobbing effect
                 + (LocalPlayer.isZooming and (LocalPlayer.fov/(math.pi/3) - 1) or LocalPlayer.fov/(math.pi/2) - 1),  -- zooming effect
-            -- x = (LocalPlayer.isZooming and -1 or 1) * (LocalPlayer.fov - math.pi/2) * (LocalPlayer.fov - math.pi/3),
             y = 0.5 * (LocalPlayer.isZooming and (LocalPlayer.fov/(math.pi/3) - 1) or  - (LocalPlayer.fov/(math.pi/2) - 1))
         }
         local weaponText = (LocalPlayer.weapon.name ) or "<3"
@@ -261,52 +371,16 @@ function HUD(LocalPlayer, Game)
     love.graphics.setColor(math.abs(LocalPlayer.Health / LocalPlayer.maxHealth - 1), LocalPlayer.Health / LocalPlayer.maxHealth, 0, 1)
     love.graphics.print(tostring(LocalPlayer.Health), size * screen_width / 10 + 30, screen_height -27)
 
-
+    if LocalPlayer.Health <= 0 then
+        love.graphics.draw(Textures.deathTexture, 0,0, 0.1 * math.sin(love.timer.getTime() * 10), screen_width / Textures.deathTexture:getWidth(), screen_height/Textures.deathTexture:getHeight(), 0, 0, nil, nil, nil)
+    end
 
     -- DrawRotatedRectangle("fill", player.x + 25, -player.y + 200, 10, 1, player.angle)
     
     
 end
 
-function SortWalls(walls, player)
-    -- table.sort(walls, function(a, b)
-    -- local dist_a = {
-    --     s = math.sqrt((a[1][1] - player.x)^2 + (a[1][2] - player.y)^2),
-    --     e = math.sqrt((a[2][1] - player.x)^2 + (a[2][2] - player.y)^2)
-    -- }
-    -- local dist_b = {
-    --     s = math.sqrt((b[1][1] - player.x)^2 + (b[1][2] - player.y)^2),
-    --     e = math.sqrt((b[2][1] - player.x)^2 + (b[2][2] - player.y)^2)
-    -- }
-    -- local min_dist_a = math.min(dist_a.s, dist_a.e)
-    -- local min_dist_b = math.min(dist_b.s, dist_b.e)
 
-    -- return min_dist_a > min_dist_b
-    -- end)
-
-
-    --Sorting the walls
-    table.sort(walls, function(a, b)
-        -- Calculate the midpoint of wall 'a'
-        local mid_a_x = (a.pos[1][1] + a.pos[2][1]) / 2
-        local mid_a_y = (a.pos[1][2] + a.pos[2][2]) / 2
-
-        -- Calculate the distance from player to the midpoint of wall 'a'
-        local dist_a = math.sqrt((mid_a_x - player.x)^2 + (mid_a_y - player.y)^2)
-
-        -- Calculate the midpoint of wall 'b'
-        local mid_b_x = (b.pos[1][1] + b.pos[2][1]) / 2
-        local mid_b_y = (b.pos[1][2] + b.pos[2][2]) / 2
-
-        -- Calculate the distance from player to the midpoint of wall 'b'
-        local dist_b = math.sqrt((mid_b_x - player.x)^2 + (mid_b_y - player.y)^2)
-
-        -- Compare the distances
-        return dist_a > dist_b
-    end)
-
-    return walls
-end
 --function used just for the minimap lol
 function DrawRotatedRectangle(mode, x, y, width, height, angle)
 	-- We cannot rotate the rectangle directly, but we

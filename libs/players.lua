@@ -1,13 +1,16 @@
 local Weapons = require "libs.weapons"
 local Player = {}
 
-function Player.createPlayer(number, world, peer)  --define xy angle but like im lazy
-    localplayer = {
+function Player.createPlayer(number, world, peer, joystick)  --define xy angle but like im lazy
+    local localplayer = {
         number = number,
         peer = peer or "local",
+        joystick = joystick ,  -- Joystick object if available
         x = 90,
         y = 204,
         angle = -32*math.pi/180 ,
+        pitch = 0,
+        height = 1.6,
         fov = math.pi/2,
         mx = 0,
         my = 0,
@@ -20,6 +23,7 @@ function Player.createPlayer(number, world, peer)  --define xy angle but like im
         Health = 100,
         maxHealth = 100,
         NextShoot = 0.1,
+        NextWeaponSwitch = 0.1,  -- may regroup in player.timers table
         weapon = Weapons.list.Default,  -- Default weapon
         magazine = {}
     }
