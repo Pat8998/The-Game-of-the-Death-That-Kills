@@ -93,7 +93,7 @@ function Draw.InGame(params)
         love.graphics.setColor(0.1, 0.1, 1, 1)
         local distfrimeye = player.height / math.sin((screen_height/screen_width) * player.fov / 2)
         local widthdistance = 2 * distfrimeye * math.tan(player.fov / 2)
-        love.graphics.print(screen_width .. "\n" .. screen_height, 200, 200, 0, 2 , 2)
+        -- love.graphics.print(screen_width .. "\n" .. screen_height, 200, 200, 0, 2 , 2)
         local shader = Textures.Shaders.floorShader
         if Game.IsMobile then
             shader:send("screenSize", {love.window.getDesktopDimensions()})
@@ -202,10 +202,6 @@ function Draw.InGame(params)
                 love.graphics.polygon('line', vertices)
                 
                 vertices = {
-                    -- { vertices[1], vertices[2], 0, 0 },
-                    -- { vertices[3], vertices[4], 0, 1 },
-                    -- { vertices[5], vertices[6], 1, 1 },
-                    -- { vertices[7], vertices[8], 1, 0 }
                     { vertices[1], vertices[2], 0, 1 },
                     { vertices[3], vertices[4], 0, 0 },
                     { vertices[5], vertices[6], 1, 0 },
@@ -265,7 +261,6 @@ function Draw.InGame(params)
             }
             local screen_pos = {
                 x = screen_width - (angle.y) * screen_width / player.fov,
-                -- y = 500 * math.exp(-dist) + screen_height / 2 
                 y = screen_height / 2 - angle.p.t * screen_height / ((screen_height/screen_width) * player.fov)
             }
             if screen_pos.x > large_sreen_width then
@@ -349,7 +344,6 @@ function HUD(LocalPlayer, Game)
         local weaponShearing = {
             x = (LocalPlayer.moveSpeed / (LocalPlayer.isZooming and 22000 or 44000)) * math.sin(love.timer.getTime() * (LocalPlayer.moveSpeed / 550)) -- bobbing effect
                 + (LocalPlayer.isZooming and (LocalPlayer.fov/(math.pi/3) - 1) or LocalPlayer.fov/(math.pi/2) - 1),  -- zooming effect
-            -- x = (LocalPlayer.isZooming and -1 or 1) * (LocalPlayer.fov - math.pi/2) * (LocalPlayer.fov - math.pi/3),
             y = 0.5 * (LocalPlayer.isZooming and (LocalPlayer.fov/(math.pi/3) - 1) or  - (LocalPlayer.fov/(math.pi/2) - 1))
         }
         local weaponText = (LocalPlayer.weapon.name ) or "<3"
@@ -386,45 +380,7 @@ function HUD(LocalPlayer, Game)
     
 end
 
-function SortWalls(walls, player)
-    -- table.sort(walls, function(a, b)
-    -- local dist_a = {
-    --     s = math.sqrt((a[1][1] - player.x)^2 + (a[1][2] - player.y)^2),
-    --     e = math.sqrt((a[2][1] - player.x)^2 + (a[2][2] - player.y)^2)
-    -- }
-    -- local dist_b = {
-    --     s = math.sqrt((b[1][1] - player.x)^2 + (b[1][2] - player.y)^2),
-    --     e = math.sqrt((b[2][1] - player.x)^2 + (b[2][2] - player.y)^2)
-    -- }
-    -- local min_dist_a = math.min(dist_a.s, dist_a.e)
-    -- local min_dist_b = math.min(dist_b.s, dist_b.e)
 
-    -- return min_dist_a > min_dist_b
-    -- end)
-
-
-    --Sorting the walls
-    table.sort(walls, function(a, b)
-        -- Calculate the midpoint of wall 'a'
-        local mid_a_x = (a.pos[1][1] + a.pos[2][1]) / 2
-        local mid_a_y = (a.pos[1][2] + a.pos[2][2]) / 2
-
-        -- Calculate the distance from player to the midpoint of wall 'a'
-        local dist_a = math.sqrt((mid_a_x - player.x)^2 + (mid_a_y - player.y)^2)
-
-        -- Calculate the midpoint of wall 'b'
-        local mid_b_x = (b.pos[1][1] + b.pos[2][1]) / 2
-        local mid_b_y = (b.pos[1][2] + b.pos[2][2]) / 2
-
-        -- Calculate the distance from player to the midpoint of wall 'b'
-        local dist_b = math.sqrt((mid_b_x - player.x)^2 + (mid_b_y - player.y)^2)
-
-        -- Compare the distances
-        return dist_a > dist_b
-    end)
-
-    return walls
-end
 --function used just for the minimap lol
 function DrawRotatedRectangle(mode, x, y, width, height, angle)
 	-- We cannot rotate the rectangle directly, but we

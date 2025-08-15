@@ -12,7 +12,7 @@ function InGame.updateHost(params)
     -- Extract variables from the params table
     local dt = params.dt
     local players = params.players
-    local player = params.localplayer
+    local localplayer = params.localplayer
     local dmouse = params.dmouse
     local mouse = params.mouse
     local world = params.world
@@ -28,13 +28,12 @@ function InGame.updateHost(params)
     if not (love.keyboard.isDown("lalt") or Game.IsMobile) and love.window.hasFocus() then
         love.mouse.setGrabbed(true)
         love.mouse.setVisible(Game.IsPaused)
-        player.angle = player.angle - dt * (dmouse.x) * (player.isZooming and 0.5 or 1)
+        localplayer.angle = localplayer.angle - dt * (dmouse.x) * (localplayer.isZooming and 0.5 or 1)
         if mouse.x <= 0 then
             love.mouse.setPosition(love.graphics.getWidth(), mouse.y)
         elseif mouse.x >= love.graphics.getWidth() - 1 then
             love.mouse.setPosition(0, mouse.y)
         end
-        --player.pitch= mouse.y/10
         mouse.x, mouse.y = love.mouse.getPosition()
     else
         love.mouse.setGrabbed(false)
@@ -50,18 +49,18 @@ function InGame.updateHost(params)
         end
     else
         local movement = love.keyboard.isDown("z") or love.keyboard.isDown("s") or love.keyboard.isDown("d") or love.keyboard.isDown("q") --or love.keyboard.isScancodeDown('volumeup')
-        if player.isZooming and (movement) then
-            player.moveSpeed = 1100
+        if localplayer.isZooming and (movement) then
+            localplayer.moveSpeed = 1100
         elseif (love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")) and movement then
-                player.moveSpeed = 2 * 2200
+                localplayer.moveSpeed = 2 * 2200
             elseif movement then
-                player.moveSpeed = 1 * 2200
-            elseif not player.Glide then
-                player.moveSpeed = 0
+                localplayer.moveSpeed = 1 * 2200
+            elseif not localplayer.Glide then
+                localplayer.moveSpeed = 0
         end
-        local dir = player.angle
+        local dir = localplayer.angle
         if love.keyboard.isDown("z") then
-            dir = player.angle
+            dir = localplayer.angle
             if love.keyboard.isDown("q") then
                 dir = dir + math.pi / 4
             elseif love.keyboard.isDown("d") then
@@ -80,45 +79,24 @@ function InGame.updateHost(params)
             dir = dir + math.pi / 2
         end
         if love.keyboard.isDown('lctrl') then
-            player.height = math.max(0.5, player.height - dt * 4)
-            player.moveSpeed = player.moveSpeed * 0.1
+            localplayer.height = math.max(0.5, localplayer.height - dt * 4)
+            localplayer.moveSpeed = localplayer.moveSpeed * 0.1
         else 
-            player.height = math.min(1.6, player.height + dt * 4)
+            localplayer.height = math.min(1.6, localplayer.height + dt * 4)
         end
-        player.dir = dir
+        localplayer.dir = dir
     end
 
 
     if love.mouse.isDown(2) then
-        player.isZooming = true
+        localplayer.isZooming = true
     else
-        player.isZooming = false
+        localplayer.isZooming = false
     end
 
 
     if mouse.lb and not Game.IsMobile then
-        Game.Weapons.Shoot(player, Entities)
-    end
-    
-    do
-        local coucou = ""
-        if Game.InHostedGame then 
-            local     x1, y1 = player.body:getPosition()
-            local     x2, y2 =  x1 + math.cos(player.angle) * 4000, y1 + math.sin(player.angle) * 3000
-            -- x2, y2 = 1,1
-                -- world:rayCast(x1, y1, x2, y2,
-                -- -- world:rayCast(x2, y2, x1, y1,
-                --     function(fixture, hitX, hitY, normalX, normalY, fraction)
-                --         coucou ="Hit fixture with userdata:" .. fixture:getUserData() .. "    " ..  fraction  .. "\n"
-                --         player.Highlight = fixture:getUserData()
-                --         -- print("Hit fixture with userdata: " .. fixture:getUserData() .. " at fraction: " .. fraction)
-                --         return 0 -- Stop at the first hit
-                --     end
-                -- )
-        else
-            coucou = "Not in hosted game"
-        end
-        -- Game.Debug = player.weapon.name .. "\n \n" .. coucou .. math.deg(player.pitch)
+        Game.Weapons.Shoot(localplayer, Entities)
     end
 
 
@@ -183,22 +161,6 @@ function InGame.UpdateWhileLoading( params)
     local enet = params.enet
     local Game = params.game
 
-
-
-    -- local message = channel:pop()
-    --     if message then
-    --         if message == "Connected" then
-    --             print("Connected to host!")
-    --             Game.IsConnectedToHost = true
-    --         elseif message == "Loaded" then
-    --             print("Loaded!")
-    --             Game.IsLoading = false
-    --             Game.InClientGame = true
-    --         end
-    --     end
-        -- print("Game.IsJoining: ", Game.IsJoining)
-
-
     if love.keyboard.isScancodeDown("escape") then
         Game.IsJoining = 0
         Game.IsLoading = false
@@ -214,7 +176,11 @@ function InGame.UpdateWhileLoading( params)
         Game.Server.ipaddr = love.system.getClipboardText()
     end
 
-    if Game.IsJoining == 1 then
+    if Game.IsJoining == 1 then                    
+        if  Game.IsMobile then
+            love.system.vibrate(0.01)
+            love.keyboard.setTextInput( false )  -- Disable text input when clicking
+        end
         Game.Server.host = enet.host_create()
         Game.Server.peer = Game.Server.host:connect(Game.Server.ipaddr, Game.enetChannels.amount)  --3 is the number of channels. add more if needed
         print("Connecting to server at " .. Game.Server.ipaddr, "with", Game.enetChannels.amount, "channels")
@@ -263,20 +229,15 @@ function InGame.updateClient(params)
     local Players = params.Players
     local Client = params.Client
 
-    Entities.list = {}
+    -- Entities.list = {} -- potentially dont clear it for obvious reasons known as things disappearing yknow
 
 
     if not Game.IsPaused then
         -- Update mouse and player angle
-        if not love.keyboard.isDown("lalt") and love.window.hasFocus() then
+        if not (love.keyboard.isDown("lalt") or Game.IsMobile) and love.window.hasFocus() then
             love.mouse.setGrabbed(true)
-            love.mouse.setVisible(false)
-            localplayer.angle = localplayer.angle - dmouse.x * dt * (localplayer.isZooming and 0.5 or 1)
-            if localplayer.angle > 2 * math.pi then
-                localplayer.angle = localplayer.angle - 2 * math.pi
-            elseif localplayer.angle < -2 * math.pi then  -- Assuming you want to normalize negative angles too
-            localplayer.angle = localplayer.angle + 2 * math.pi
-            end
+            love.mouse.setVisible(Game.IsPaused)
+            localplayer.angle = localplayer.angle - dt * (dmouse.x) * (localplayer.isZooming and 0.5 or 1)
             if mouse.x <= 0 then
                 love.mouse.setPosition(love.graphics.getWidth(), mouse.y)
             elseif mouse.x >= love.graphics.getWidth() - 1 then
@@ -284,11 +245,24 @@ function InGame.updateClient(params)
             end
             mouse.x, mouse.y = love.mouse.getPosition()
         else
-                love.mouse.setGrabbed(false)
-                love.mouse.setVisible(true)
+            love.mouse.setGrabbed(false)
+            love.mouse.setVisible(true)
+            Game.TouchScreen.handle(params)
         end
-
-        do
+        if localplayer.angle > 2 * math.pi then
+            localplayer.angle = localplayer.angle - 2 * math.pi
+        elseif localplayer.angle < -2 * math.pi then  -- Assuming you want to normalize negative angles too
+        localplayer.angle = localplayer.angle + 2 * math.pi
+        end
+        if Game.IsMobile then
+            for _, button in pairs(Game.Buttons.MobileButtons) do
+                button:update(mouse.x, mouse.y, mouse.lb)
+            end
+            if Game.Buttons.MobileButtons.Shoot.isClicked then 
+                Client.Shoot(nil, Game, localplayer) --nil to avoid op weapons I guess
+            end
+            
+        else
             local movement = love.keyboard.isDown("z") or love.keyboard.isDown("s") or love.keyboard.isDown("d") or love.keyboard.isDown("q")
             if movement then
                 if localplayer.isZooming then
@@ -318,6 +292,7 @@ function InGame.updateClient(params)
             elseif love.keyboard.isDown("q") then
                 dir = dir + math.pi / 2
             end
+            localplayer.dir = dir
             if mouse.rb then
                 localplayer.fov = math.max(math.pi / 3, localplayer.fov - math.pi / 6 * dt * 4)
                 localplayer.ScaleFactor = math.min(3, localplayer.ScaleFactor + dt * 4)
@@ -327,17 +302,19 @@ function InGame.updateClient(params)
                 localplayer.ScaleFactor = math.max(2, localplayer.ScaleFactor - dt * 4)
                 localplayer.isZooming = false
             end
-
-            Client.Move(dir, localplayer, Game)
+            if mouse.lb then
+                Client.Shoot(nil, Game, localplayer) --nil to avoid op weapons I guess
+            end
+        end
+        Client.Move(localplayer, Game)
+    end
+    for _, action in pairs(Game.DelayedCallbacks) do
+        if action.t <= love.timer.getTime() then
+            action.callback()
+            table.remove(Game.DelayedCallbacks, _)
         end
     end
 
-
-
-    
-    if mouse.lb then
-        Client.Shoot(nil, Game, localplayer) --nil to avoid op weapons I guess
-    end
 
     do
         local event = Game.Server.host:service(Game.Server.ReceiveTimeout)

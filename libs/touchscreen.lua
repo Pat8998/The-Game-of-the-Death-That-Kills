@@ -8,10 +8,7 @@ function TouchScreen.handle(params)
     local LJoyTouched = false
     Game.Debug = ""
     for id, touch in pairs(Game.TouchScreen.Touches) do
-        -- Process each touch
-        -- Example: print touch coordinates
         -- Game.Debug = Game.Debug .. " X: " .. touch.x .. " Y: " .. touch.y .. "mx :" ..  touch.dx .. "my" .. touch.dy .. "\n"
-
         if touch.IsLeftJoy then
             local lx, ly = touch.sx - touch.x, touch.sy - touch.y
                 localplayer.dir = localplayer.angle + math.atan2(lx, ly)

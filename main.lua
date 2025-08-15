@@ -1,9 +1,5 @@
---TO DO :
--- make the bullets look realistic
--- and do things when they collide walls
--- and add multiplayer
-
---enet channel 2 for connect
+-- The Game of the Death That Kills
+-- Made by Patrick_8998
 
 local Button = require("libs.buttons")
 local Draw = require("libs.draw")
@@ -143,9 +139,6 @@ function love.load()
         love.window.setMode(1920, 1080, {fullscreen = true})
         Game.Buttons.MobileButtons = Button.MobileButtons(Game, LocalPlayer, Entities)  -- Initialize mobile buttons
     end
-    -- Channels.InputCommuncicationChannel = love.thread.getChannel("InputServerThread")
-    -- Channels.OutputCommuncicationChannel = love.thread.getChannel("OutputServerThread")
-    -- Channels.GameChannel = love.thread.getChannel("GameServerThread")
 end
 
 
@@ -489,15 +482,7 @@ end
 
 
 
--- function JoinGame()
---     local ThreadScrpit = string.dump(Multiplayer.Thread)
---     local MultplayerThread = love.thread.newThread(ThreadScrpit)
---     MultplayerThread:start()
---     Multiplayer.ThreadChannel = love.thread.getChannel("MultplayerThread")
--- end
-
-
-
+-- PLACEHOLDERS BC I HAVE TO DEFINE THEM
 function endContact(a, b, coll)
     -- print("End Contact")
 end
@@ -509,12 +494,3 @@ end
 function postSolve(a, b, coll, normalImpulse1, tangentImpulse1, normalImpulse2, tangentImpulse2)
     -- print("Post Solve Contact")
 end
---RATHER THAN ADJUSTING THE ANGLES
---HOW ABOUT I ADJUST SCREEN POSITIONNING
---SO WHEN ITS LIKE OVER 360 * width /FOV = large_sreen_width
--- IT IS RATHER just over 0
--- for both coordinates
--- See ya
-
---BIG PROBLEM : HOW TO KNOW WETHER YOU DRAW WALLS OR ENTITIES ?
--- CREATE A TO DRAW TABLE SORTED? WiTH AN IF THAT GETS THE BODY TYPE
