@@ -28,7 +28,7 @@ function Draw.LoadingScreen(Game)
             math.fmod((love.timer.getTime())* math.pi * 2, 2 * math.pi) + math.pi *1.99,
             math.sin(love.timer.getTime() * 4) * 8 + 11)
     end
-    love.graphics.setBackgroundColor(0.2, 0.2, 0.9, 1)
+    love.graphics.setBackgroundColor(0.1, 0.1, 0.2, 0.8)
 end
 
 function Draw.InGameSplitscreen(params)
