@@ -332,7 +332,7 @@ function love.keypressed(key, scan)
             love.mouse.setVisible(Game.IsPaused)
         end
         love.system.vibrate(0.01)    
-    elseif scan == "return" then
+    elseif scan == "return" or key == 'kpenter' then
         Game.IsJoining = 1
         if Game.Server.ipaddr == "" then
             Game.Server.ipaddr = 'localhost:6969'
