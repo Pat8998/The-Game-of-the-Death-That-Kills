@@ -362,6 +362,17 @@ function HUD(LocalPlayer, Game)
         love.graphics.rectangle("fill", screen_width - 3 * size, screen_height/2 + math.min(200 * size, screen_height/2 - 100 * size) + 99, -30 * size, -100 * size * (LocalPlayer.magazine[LocalPlayer.weapon.name])/(LocalPlayer.weapon.maxmagazine or LocalPlayer.magazine[LocalPlayer.weapon.name]))
 
     end
+
+    --SCORE
+    local time = love.timer.getTime()
+    local i = LocalPlayer.Score
+    love.graphics.print("SCORE: " .. tostring(LocalPlayer.Score), screen_width/10 * size, 20, 0, 2, 2.1)
+    love.graphics.setColor(
+        math.sin(time   ) * 0.5 + 0.5,
+        math.sin(time   +math.pi/3 * i) * 0.5 + 0.5,
+        math.sin(time   +2*math.pi/3 * i) * 0.5 + 0.5,
+            2)
+    love.graphics.print("SCORE: " .. tostring(LocalPlayer.Score), screen_width/10 * size, 20, 0, 2, 2)
     
     --LIFEBAR
     love.graphics.setColor(1, 0, 0, 1)

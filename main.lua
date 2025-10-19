@@ -10,6 +10,8 @@ local Multiplayer = require("libs.multiplayer")
 local Client = require("libs.client")
 local Weapons = require("libs.weapons")
 local TouchScreen = require("libs.touchscreen")
+local ScoreHandler = require("libs.score")
+local Gamemodes = require("libs.Gamemodes")
 local Textures = function () return require('libs.textures') end
 local enet = require "enet"  --put it in global to call it from libraries ???
 local utf8 = require("utf8")
@@ -367,6 +369,8 @@ function love.keypressed(key, scan)
         LocalPlayer.Health = LocalPlayer.Health + 1
     elseif key == 'kp/' then
         LocalPlayer.Health = LocalPlayer.Health - 1
+    elseif key == "kp0" then
+        Gamemodes.reset(Game, Players)
     end
     if key == 'r' then
         LocalPlayer.magazine[LocalPlayer.weapon.name] = 0 
@@ -462,9 +466,15 @@ function beginContact(a, b, coll)
         end
         if other:getUserData() == "player" or other:getUserData() == "mob" then
             --ADD THZE PLAYER HEALTHE SYSTEM LOLLL
-            for key, value in pairs(Players.list) do
-                if value.fixture == other then
-                    value.Health = value.Health - (Entities.list[bullet:getBody()] or LocalPlayer).weapon.damage
+            for _, player in pairs(Players.list) do
+                if player.fixture == other then
+                    player.Health = player.Health - (Entities.list[bullet:getBody()] or LocalPlayer).weapon.damage
+                    ScoreHandler.Handle({
+                        event = ScoreHandler.Events.PlayerHit,
+                        shooter = Entities.list[bullet:getBody()].player or LocalPlayer,
+                        victim = player,
+                        weapon = Entities.list[bullet:getBody()].weapon
+                    })
                     break
                 end
                 -- print(value.fixture, other)

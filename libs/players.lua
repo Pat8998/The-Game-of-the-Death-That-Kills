@@ -25,7 +25,8 @@ function Player.createPlayer(number, world, peer, joystick)  --define xy angle b
         NextShoot = 0.1,
         NextWeaponSwitch = 0.1,  -- may regroup in player.timers table
         weapon = Weapons.list.Default,  -- Default weapon
-        magazine = {}
+        magazine = {},
+        Score = 0,
     }
     localplayer.body = love.physics.newBody(world,localplayer.x,localplayer.y,"dynamic")
     localplayer.fixture = love.physics.newFixture(localplayer.body, localplayer.shape, 1)

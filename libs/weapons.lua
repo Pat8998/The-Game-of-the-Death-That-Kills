@@ -95,7 +95,13 @@ function Weapons.Shoot(player, Entities, weapon)
             body:setAngle(angle)
             body:setMass(body:getMass() * (weapon.mass or 1))
             body:applyLinearImpulse(math.cos(angle) * weapon.speed * 0.001 , math.sin(angle) * weapon.speed * 0.001)
-            Entities.list[body] = {body = body, fixture = fixture, angle = player.angle, player = player, life = weapon.BulletDuration or 2, weapon = weapon}
+            Entities.list[body] = {
+                body = body,
+                fixture = fixture,
+                angle = player.angle,
+                player = player,
+                life = weapon.BulletDuration or 2,
+                weapon = weapon}
             player.NextShoot = love.timer.getTime() + (weapon.shootDelay or 0.00001)  -- Default shoot delay if not specified
             bullets = bullets - 1
             magazine = magazine - 1

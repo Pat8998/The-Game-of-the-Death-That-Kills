@@ -119,6 +119,7 @@ function InGame.updateHost(params)
                 p.body:setPosition(0, 150)
                 p.body:setLinearVelocity(0, 0)
                 p.body:setAngularVelocity(26)
+                p.isDead = false
                 end
             })
             end
