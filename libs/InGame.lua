@@ -11,7 +11,7 @@ end
 function InGame.updateHost(params)
     -- Extract variables from the params table
     local dt = params.dt
-    local players = params.players
+    local players = params.Game.Players
     local localplayer = params.localplayer
     local dmouse = params.dmouse
     local mouse = params.mouse
@@ -21,7 +21,7 @@ function InGame.updateHost(params)
     local Multiplayer = require("libs.multiplayer")
     local Game = params.Game
     local Channels = params.Channels
-    local Player = params.Player
+    local Player = params.Player --the library
     local Map = params.Map
 
     -- Update mouse and player angle
@@ -110,20 +110,20 @@ function InGame.updateHost(params)
     world:update(dt)
     for _, p in ipairs(players.list) do
         p.x, p.y = p.body:getPosition()
-        if p.Health <= 0 then
-            table.insert(Game.DelayedCallbacks, 
-            {
-                t = love.timer.getTime() + 1,
-                callback = function()
-                p.Health = p.maxHealth
-                p.body:setPosition(0, 150)
-                p.body:setLinearVelocity(0, 0)
-                p.body:setAngularVelocity(26)
-                p.isDead = false
-                end
-            })
-            end
-        -- p.angle = p.body:getAngle()
+    --     if p.Health <= 0 then
+    --         table.insert(Game.DelayedCallbacks, 
+    --         {
+    --             t = love.timer.getTime() + 1,
+    --             callback = function()
+    --             p.Health = p.maxHealth
+    --             p.body:setPosition(0, 150)
+    --             p.body:setLinearVelocity(0, 0)
+    --             p.body:setAngularVelocity(26)
+    --             p.isDead = false
+    --             end
+    --         })
+    --         end
+    --     -- p.angle = p.body:getAngle()
     end
     for _, action in pairs(Game.DelayedCallbacks) do
         if action.t <= love.timer.getTime() then
@@ -440,7 +440,7 @@ function InGame.updateClient(params)
 end
 
 function InGame.UpdatePlayers(params)
-    for _, player in ipairs(params.players.list) do
+    for _, player in ipairs(params.Game.Players.list) do
         if player.angle > 2 * math.pi then
             player.angle = player.angle - 2 * math.pi
         elseif player.angle < -2 * math.pi then  -- Assuming you want to normalize negative angles too
@@ -479,16 +479,13 @@ function InGame.UpdatePlayers(params)
             end
             player.fov = player.isZooming and math.max(math.pi / 3, player.fov - math.pi / 6 * params.dt * 4) or math.min(math.pi / 2, player.fov + math.pi / 6 * params.dt * 4)
             player.ScaleFactor = player.isZooming and math.min(3, player.ScaleFactor + params.dt * 4) or math.max(2, player.ScaleFactor - params.dt * 4)
-            player.body:setLinearVelocity(
-                math.cos(player.dir) * player.moveSpeed * params.dt,
-                math.sin(player.dir) * player.moveSpeed * params.dt
-            )
-        else
-            player.body:setLinearVelocity(
-                math.cos(player.dir) * player.moveSpeed * params.dt,
-                math.sin(player.dir) * player.moveSpeed * params.dt
-            )
         end
+        player.body:setLinearVelocity(
+            math.cos(player.dir) * player.moveSpeed * params.dt,
+            math.sin(player.dir) * player.moveSpeed * params.dt
+        )
+        params.Game.Debug = "Player " .. player.number .. " Speed: " .. tostring(player.moveSpeed)
+        .. "pos: " .. tostring(math.floor(player.body:getX())) .. ", " .. tostring(math.floor(player.body:getY()))
     end
 end
 

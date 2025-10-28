@@ -10,23 +10,22 @@ local Multiplayer = require("libs.multiplayer")
 local Client = require("libs.client")
 local Weapons = require("libs.weapons")
 local TouchScreen = require("libs.touchscreen")
-local ScoreHandler = require("libs.score")
 local Gamemodes = require("libs.Gamemodes")
-local Textures = function () return require('libs.textures') end
+local CollisionHandler = require("libs.collisionhandler")
+local Textures =  require('libs.textures')
 local enet = require "enet"  --put it in global to call it from libraries ???
 local utf8 = require("utf8")
 local json = require("libs.external.lunajson")
 local mouse ={x=0, y=0, lb=false, rb=false, mb=false}
 local fps
 local WallsHeight = 3
-local test = "nil"
-local data = {}
 local Map = {walls = {list = {}}}
-local Entities = {}
+-- local Entities = {}
 local Game = {
+    Gamemodes = Gamemodes,
     DelayedCallbacks = {},  -- Table to hold delayed callbacks
     UI = {
-        crosshair = Textures().crosshairTexture,  -- Crosshair texture
+        crosshair = Textures.crosshairTexture,  -- Crosshair texture
         crosshairSize = 1,  -- Size of the crosshair
     },
     InHostedGame = false,
@@ -59,17 +58,24 @@ local Game = {
     Weapons = Weapons,  -- Weapons module
     TouchScreen = TouchScreen,
     Buttons = {},  -- Buttons table to hold all buttons
+    Entities = {},
+    Players = {
+        list = {},
+        number = 1
+    },
 }
-local Players = {
-    list = {},
-    number = 1
-}
+Gamemodes.Game = Game  -- Assign the Game table to Gamemodes
+CollisionHandler.Game = Game  -- Assign the Game table to CollisionHandler
+-- local Players = {
+--     list = {},
+--     number = 1
+-- }
 local Channels = {
     InputCommuncicationChannel = nil,
     OutputCommuncicationChannel = nil,
     GameChannel = nil
 }
-local LocalPlayer = Players.list[0]
+local LocalPlayer = Game.Players.list[0]
 --canvas is great
 --color mask for color
 
@@ -82,10 +88,10 @@ function love.load()
         love.window.setMode(desktopWidth, desktopHeight, {fullscreen = false})
     end
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
----@diagnostic disable-next-line: cast-local-type
-    Textures = Textures()
+    love.graphics.print("Loading...")
+    Textures.load()  -- Load textures
     Game.IsMobile = love.system.getOS() == 'Android' or love.system.getOS() == 'iOS'
-    Game.Buttons.PauseMenu = Button.PauseMenu(Game, InGame, Players, Entities, Player, Map, Walls, Multiplayer)  -- Initialize buttons
+    Game.Buttons.PauseMenu = Button.PauseMenu(Game, InGame, Game.Players, Entities, Player, Map, Walls, Multiplayer)  -- Initialize buttons
 
     
     InGameCanvas = love.graphics.newCanvas(love.graphics.getWidth(), love.graphics.getHeight())
@@ -104,17 +110,17 @@ function love.load()
 
     love.physics.setMeter(64)
     world = love.physics.newWorld(0, 0, true)
-	world:setCallbacks(beginContact, endContact, preSolve, postSolve)
+	world:setCallbacks(CollisionHandler.beginContact, CollisionHandler.endContact, CollisionHandler.preSolve, CollisionHandler.postSolve)
 
     InGame.CreateLocalGame({
         world = world,
         Game = Game,
-        Players = Players,
+        Players = Game.Players,
         Entities = Entities,
         Player = Player,
         Map = Map
     })
-    LocalPlayer = Players.list[1]-- Create the local player and the walls
+    LocalPlayer = Game.Players.list[1]-- Create the local player and the walls
 
     Game.SplitscreenPos = {
         {{x = 0, y = 0 , width = love.graphics.getWidth(), height = love.graphics.getHeight()}}, --I mean there is no need to draw spitscreen if you're alone
@@ -170,7 +176,7 @@ function love.update(dt)
     if Game.InHostedGame then
         InGame.updateHost({
             dt = dt,
-            players = Players,                -- player table
+            players = Game.Players,                -- player table
             localplayer = LocalPlayer,
             dmouse = dmouse,                -- dmouse table (must contain dmouse.x)
             mouse = mouse,                  -- mouse table (must contain x, y, lb, etc.)
@@ -198,7 +204,7 @@ function love.update(dt)
             localplayer = LocalPlayer,
             Map = Map,
             json = json,
-            Players = Players,
+            Players = Game.Players,
             Client = Client
         })
     else
@@ -226,7 +232,7 @@ function love.draw()
             screen_height = love.graphics.getHeight(),
             WallsHeight = WallsHeight,               -- your WallsHeight variable
             Entities = Entities,                      -- your entities table
-            Players = Players
+            Players = Game.Players
    })
     elseif Game.IsSplitscreen and not Game.IsPaused then     
         Draw.InGameSplitscreen({
@@ -239,7 +245,7 @@ function love.draw()
             screen_height = love.graphics.getHeight(),
             WallsHeight = WallsHeight,               -- your WallsHeight variable
             Entities = Entities,                      -- your entities table
-            Players = Players
+            Players = Game.Players
         })
     elseif Game.IsLoading then
         Draw.LoadingScreen(Game)
@@ -258,7 +264,7 @@ function love.draw()
                 screen_height = love.graphics.getHeight(),
                 WallsHeight = WallsHeight,               -- your WallsHeight variable
                 Entities = Entities,                      -- your entities table
-                Players = Players
+                Players = Game.Players
            })
         end)
             -- Draw the blurred canvas to the screen
@@ -278,15 +284,15 @@ function love.joystickadded( joystick )
             LocalPlayer.joystick = joystick  -- Assign the joystick to the local player
         else
             local assigned = {}
-            for _, v in ipairs(Players.list) do
+            for _, v in ipairs(Game.Players.list) do
                 assigned[v.number] = true
             end
             local new_number = 1
             while assigned[new_number] do
                 new_number = new_number + 1
             end
-            Players.list[new_number] = Player.createPlayer(new_number, world, nil, joystick)  -- Create a new player with the joystick
-            -- joystick.Player = Players.list[new_number]  -- Assign the player to the joystick
+            Game.Players.list[new_number] = Player.createPlayer(new_number, world, nil, joystick)  -- Create a new player with the joystick
+            -- joystick.Player = Game.Players.list[new_number]  -- Assign the player to the joystick
             -- print(joystick.Player.joystick.Player.joystick)
             Game.Buttons.PauseMenu.SplitScreen.isActive = true  -- Enable the splitscreen button
         end
@@ -294,10 +300,10 @@ function love.joystickadded( joystick )
 end
 function love.joystickremoved( joystick )
     print("Joystick removed: " .. joystick:getName(), joystick:getID())
-    for i, player in ipairs(Players.list) do
+    for i, player in ipairs(Game.Players.list) do
         if player.joystick == joystick and player.number == LocalPlayer.number then
             player:destroy()  -- Destroy the player associated with the joystick
-            table.remove(Players.list, i)  -- Remove the player from the list
+            table.remove(Game.Players.list, i)  -- Remove the player from the list
             break
         end
     end
@@ -354,23 +360,23 @@ function love.keypressed(key, scan)
     end
     if key == "kp+" then
         local assigned = {}
-        for _, v in ipairs(Players.list) do
+        for _, v in ipairs(Game.Players.list) do
             assigned[v.number] = true
         end
         local new_number = 1
         while assigned[new_number] do
             new_number = new_number + 1
         end
-        Players.list[new_number] = Player.createPlayer(new_number, world)
+        Game.Players.list[new_number] = Player.createPlayer(new_number, world)
         Game.Buttons.PauseMenu.SplitScreen.isActive = true  -- Enable the splitscreen button
     elseif key == 'kp-' then
-        table.remove(Players.list, #Players.list)  -- Remove the player from the list
+        table.remove(Game.Players.list, #Game.Players.list)  -- Remove the player from the list
     elseif key == 'kp*' then
         LocalPlayer.Health = LocalPlayer.Health + 1
     elseif key == 'kp/' then
         LocalPlayer.Health = LocalPlayer.Health - 1
     elseif key == "kp0" then
-        Gamemodes.reset(Game, Players)
+        Gamemodes.reset(Game, Game.Players)
     end
     if key == 'r' then
         LocalPlayer.magazine[LocalPlayer.weapon.name] = 0 
@@ -442,65 +448,9 @@ end
 function DestroyEntity(entity)
     if entity ~= nil then
         local body = entity.body
+        Entities.list[body].fixture:destroy()  -- Destroy the fixture
         Entities.list[body].body:destroy()  -- Destroy the body
         Entities.list[body] = nil           -- Remove the object from the table
     end
 end
 
-function beginContact(a, b, coll)
-    -- print ("colliding" , a:getUserData() , "with" , b:getUserData())
-    Debug ="colliding" .. a:getUserData() .. "with" .. b:getUserData()
-    -- Get userdata of the colliding objects
-    local userdataA = a:getUserData()
-    local userdataB = b:getUserData()
-
-    local bullet, other
-    -- If one object is "deletable" and the other is not a "player"
-    if userdataA == "bullet" or userdataB == "bullet" then
-        if userdataA == "bullet" then
-            bullet = a
-            other = b
-        else
-            bullet = b
-            other = a
-        end
-        if other:getUserData() == "player" or other:getUserData() == "mob" then
-            --ADD THZE PLAYER HEALTHE SYSTEM LOLLL
-            for _, player in pairs(Players.list) do
-                if player.fixture == other then
-                    player.Health = player.Health - (Entities.list[bullet:getBody()] or LocalPlayer).weapon.damage
-                    ScoreHandler.Handle({
-                        event = ScoreHandler.Events.PlayerHit,
-                        shooter = Entities.list[bullet:getBody()].player or LocalPlayer,
-                        victim = player,
-                        weapon = Entities.list[bullet:getBody()].weapon
-                    })
-                    break
-                end
-                -- print(value.fixture, other)
-            end
-        elseif other:getUserData():match("^wall") then
-            --idk put an effect on the wall or smth
-        end
-        DestroyEntity(Entities.list[bullet:getBody()])
-    end
-end
-
-
-
-
-
-
-
--- PLACEHOLDERS BC I HAVE TO DEFINE THEM
-function endContact(a, b, coll)
-    -- print("End Contact")
-end
-
-function preSolve(a, b, coll)
-    -- print("Pre Solve Contact")
-end
-
-function postSolve(a, b, coll, normalImpulse1, tangentImpulse1, normalImpulse2, tangentImpulse2)
-    -- print("Post Solve Contact")
-end

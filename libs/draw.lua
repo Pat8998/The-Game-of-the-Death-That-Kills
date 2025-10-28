@@ -275,7 +275,7 @@ function Draw.InGame(params)
             love.graphics.setLineWidth(5)
             love.graphics.rectangle("line", screen_pos.x - w/2 , screen_pos.y - h/2 , w, h)
             love.graphics.setColor(1, 1, 1, otherplayer.Health > 0 and 0.5 or 2)
-            local texture = otherplayer.Health > 0 and Textures.ayakakaTexture or Textures.deathTexture
+            local texture = otherplayer.Health > 0 and Textures.player.default or Textures.deathTexture
             love.graphics.draw(texture, screen_pos.x - w/2 , screen_pos.y - h/2, 0, w / texture:getWidth(), h / texture:getHeight())
             love.graphics.setColor(1, 0.1, 0.1, 1)
             love.graphics.print(otherplayer.number, screen_pos.x, screen_pos.y - h/2, 0.1 * math.sin(love.timer.getTime() * 10), 1.5, 1.5)
