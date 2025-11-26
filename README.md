@@ -29,10 +29,19 @@ curl  https://github.com/Pat8998/The-Game-of-the-Death-That-Kills/releases/lates
  - Do the 3D as shader (not sure if that's possible)
 
  - ### Ideas : 
-    - nuumbers on hit
+    - numbers on hit
     - score
-    - objects/ power-up (different caractters)
+    - objects/ power-up (different caracters)
     - real map / story mode
+    - #### Crouch mechanic
+        - available in fps mode only
+        - when crouched you can hit everyone :
+          - crouched people 100%
+          - standing people 10% damage +  malus      
+         - slow move
+         - over the top :
+           - not available
+           - hit crouched people
 
  - ### To fix :
 
