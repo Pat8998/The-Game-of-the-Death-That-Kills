@@ -42,16 +42,16 @@ Weapons.list = {
         rechargetime = 1.5,  -- Time to recharge the weapon
         maxmagazine = 50,  -- Maximum number of bullets in the magazine
     },
-    Ball = {
-        name = "Ball",
-        number = 4,
-        shootDelay = 0.01,
-        BulletDuration = 2,
-        speed = 0.5,
-        spread = 10*math.pi / 180,  -- Spread in rads
-        damage = 0,
-        mass = 25,
-    }
+    -- Ball = {
+    --     name = "Ball",
+    --     number = 4,
+    --     shootDelay = 0.01,
+    --     BulletDuration = 2,
+    --     speed = 0.5,
+    --     spread = 10*math.pi / 180,  -- Spread in rads
+    --     damage = 0,
+    --     mass = 25,
+    -- }
 }
 
 Weapons.weaponsNumber = {}

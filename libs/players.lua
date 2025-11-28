@@ -6,7 +6,7 @@ function Player.createPlayer(number, world, peer, joystick)  --define xy angle b
         number = number,
         peer = peer or "local",
         joystick = joystick ,  -- Joystick object if available
-        x = 90,
+        x = 90 + number * 50rr,
         y = 204,
         angle = -32*math.pi/180 ,
         pitch = 0,
