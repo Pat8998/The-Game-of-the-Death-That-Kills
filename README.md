@@ -13,10 +13,15 @@
  - Graphic style : undefined, building functionnality right now
 ### (My first game ever :)
 ## How to build
-https://www.love2d.org/wiki/Building_L%C3%96VE
-
-https://github.com/love2d/megasource
-
+* Download LÖVE engine at https://love2d.org/#download
+* Download the latest release : https://github.com/Pat8998/The-Game-of-the-Death-That-Kills/releases/latest/download/Tgotdtk.love
+~~~
+curl  https://github.com/Pat8998/The-Game-of-the-Death-That-Kills/releases/latest/download/Tgotdtk.love   -o tgodtk.love -sL
+~~~
+* launch with
+ ~~~
+ love tgotdtk.love
+~~~
 ## To Do List :
  - make the bullets look realistic
  - do things when they collide walls
@@ -24,10 +29,19 @@ https://github.com/love2d/megasource
  - Do the 3D as shader (not sure if that's possible)
 
  - ### Ideas : 
-    - nuumbers on hit
+    - numbers on hit
     - score
-    - objects/ power-up (different caractters)
+    - objects/ power-up (different caracters)
     - real map / story mode
+    - #### Crouch mechanic
+        - available in fps mode only
+        - when crouched you can hit everyone :
+          - crouched people 100%
+          - standing people 10% damage +  malus      
+         - slow move
+         - over the top :
+           - not available
+           - hit crouched people
 
  - ### To fix :
 
