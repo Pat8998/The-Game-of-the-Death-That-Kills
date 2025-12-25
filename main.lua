@@ -10,6 +10,7 @@ local Multiplayer = require("libs.multiplayer")
 local Client = require("libs.client")
 local Weapons = require("libs.weapons")
 local TouchScreen = require("libs.touchscreen")
+local Input = require("libs.input")
 local Gamemodes = require("libs.Gamemodes")
 local CollisionHandler = require("libs.collisionhandler")
 local Textures =  require('libs.textures')
@@ -67,15 +68,15 @@ local Game = {
 Gamemodes.Game = Game  -- Assign the Game table to Gamemodes
 CollisionHandler.Game = Game  -- Assign the Game table to CollisionHandler
 -- local Players = {
---     list = {},
---     number = 1
--- }
-local Channels = {
-    InputCommuncicationChannel = nil,
-    OutputCommuncicationChannel = nil,
-    GameChannel = nil
-}
-local LocalPlayer = Game.Players.list[0]
+    --     list = {},
+    --     number = 1
+    -- }
+    local Channels = {
+        InputCommuncicationChannel = nil,
+        OutputCommuncicationChannel = nil,
+        GameChannel = nil
+    }
+    local LocalPlayer = Game.Players.list[0]
 --canvas is great
 --color mask for color
 
@@ -87,12 +88,13 @@ function love.load()
         local desktopWidth, desktopHeight = math.max(love.window.getDesktopDimensions()), math.min(love.window.getDesktopDimensions()) 
         love.window.setMode(desktopWidth, desktopHeight, {fullscreen = false})
     end
+    Input.load()  -- Load input mappings
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
     love.graphics.print("Loading...")
     Textures.load()  -- Load textures
     Game.IsMobile = love.system.getOS() == 'Android' or love.system.getOS() == 'iOS'
     Game.Buttons.PauseMenu = Button.PauseMenu(Game, InGame, Game.Players, Entities, Player, Map, Walls, Multiplayer)  -- Initialize buttons
-
+    
     
     InGameCanvas = love.graphics.newCanvas(love.graphics.getWidth(), love.graphics.getHeight())
     BGCanvas = love.graphics.newCanvas(love.graphics.getWidth(), love.graphics.getHeight())
@@ -402,6 +404,16 @@ function love.wheelmoved(x, y)
         Weapons.previousWeapon(LocalPlayer)
     end
 end
+
+function love.gamepadpressed(joy, key)
+    if key == "start" then
+        Game.IsPaused = not Game.IsPaused
+        love.mouse.setGrabbed(not Game.IsPaused)
+        love.mouse.setVisible(Game.IsPaused)
+        love.system.vibrate(0.01)
+    end
+end
+
 
 function love.touchpressed(id, x, y, dx, dy, pressure)
     local screen_width, screen_height = love.graphics.getDimensions()
