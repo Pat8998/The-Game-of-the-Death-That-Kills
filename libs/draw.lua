@@ -130,9 +130,9 @@ function Draw.InGame(params)
     else
         for _, v in pairs(TTD) do
             if v.type == "wall" then
-                v.dist = math.sqrt(((v.pos[1][1] + v.pos[2][1])/2 - player.x)^2 + ((v.pos[1][2] + v.pos[2][2])/2 - player.y)^2)
+                v.dist = ((v.pos[1][1] + v.pos[2][1])/2 - player.x)^2 + ((v.pos[1][2] + v.pos[2][2])/2 - player.y)^2
             else
-                v.dist = math.sqrt((v.x - player.x)^2 + (v.y - player.y)^2)
+                v.dist = (v.x - player.x)^2 + (v.y - player.y)^2
             end
         end
         table.sort(TTD, function(a, b)

@@ -17,7 +17,7 @@ function CollisionHandler.beginContact(a, b, coll)
             bullet = b
             other = a
         end
-        if bullet and bullet:getBody() then
+        if bullet and Entities.list[bullet:getBody()] then
             if other:getUserData() == "player" or other:getUserData() == "mob" then
                 --ADD THZE PLAYER HEALTHE SYSTEM LOLLL
                 for _, p in pairs(CollisionHandler.Game.Players.list) do
@@ -41,7 +41,9 @@ function CollisionHandler.beginContact(a, b, coll)
             elseif other:getUserData():match("^wall") then
                 --idk put an effect on the wall or smth
             end
+            -- if Entities.list[bullet:getBody()] then
             DestroyEntity(Entities.list[bullet:getBody()])
+            -- end
         else
             print("Bullet has no body!")
         end

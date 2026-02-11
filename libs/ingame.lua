@@ -467,7 +467,7 @@ function InGame.UpdatePlayers(params)
                         params.Game.Weapons.Shoot(player, params.Entities)
                     end
                 end
-                player.angle = player.angle - rx * params.dt * (player.isZooming and 4 or 12)
+                player.angle = player.angle - rx * params.dt * (player.isZooming and 4 or 12) *0.4 --Need to adjust sensitivity in settings?
                 if player.angle > 2 * math.pi then
                     player.angle = player.angle - 2 * math.pi
                 elseif player.angle < -2 * math.pi then  -- Assuming you want to normalize negative angles too
