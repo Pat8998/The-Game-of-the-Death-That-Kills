@@ -62,7 +62,7 @@ local Game = {
     Entities = {},
     Players = {
         list = {},
-        number = 3
+        number = 1
     },
 }
 Gamemodes.Game = Game  -- Assign the Game table to Gamemodes
