@@ -28,6 +28,24 @@ function Gamemodes.OnPlayerHit(params)
     local shooter = params.shooter
     local weapon = params.weapon
     local damage = weapon and weapon.damage or shooter.weapon.damage or 1
+    -- local pos = params.pos
+    local x, y = hit.body:getPosition() -- Fallback to hit position if not provided
+    local pos = {x = x, y = y}
+    table.insert(Gamemodes.Game.DelayedCallbacks, 
+        { 
+            t = 0, 
+            callback = function() 
+                table.insert(Gamemodes.Game.Entities.remImg, 
+                {
+                    imgType = "text",
+                    x = pos.x,
+                    y = pos.y,
+                    angle = hit.body:getAngle(),
+                    text = tostring(damage), 
+                    life = 1.0
+                }) 
+            end         
+            })
     hit.Health = hit.Health - damage
     if hit.Health <= 0 and not hit.isDead then
         hit.isDead = true

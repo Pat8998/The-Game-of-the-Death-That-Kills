@@ -1,5 +1,10 @@
 local Weapons = {}
 
+Weapons.types = {
+    projectile = 0, --Basically every projectile
+    bullet = 1, 
+    ball = 2, --The kind which doesnt leave a trace
+}
 Weapons.list = {
     Default = {
         name = "Default",
@@ -38,20 +43,21 @@ Weapons.list = {
         speed = 1.2,
         spread = 10*math.pi / 180,  -- Spread in rads
         damage = 5,
-        mass = 25,
+        -- mass = 25,
         rechargetime = 1.5,  -- Time to recharge the weapon
         maxmagazine = 50,  -- Maximum number of bullets in the magazine
     },
-    -- Ball = {
-    --     name = "Ball",
-    --     number = 4,
-    --     shootDelay = 0.01,
-    --     BulletDuration = 2,
-    --     speed = 0.5,
-    --     spread = 10*math.pi / 180,  -- Spread in rads
-    --     damage = 0,
-    --     mass = 25,
-    -- }
+    Ball = {
+        name = "Ball",
+        number = 4,
+        shootDelay = 0.01,
+        BulletDuration = 2,
+        speed = 225,
+        spread = 10*math.pi / 180,  -- Spread in rads
+        damage = 0,
+        mass = 3,
+        type =  "ball" --The kind which doesnt leave a trace
+    }
 }
 
 Weapons.weaponsNumber = {}
@@ -88,20 +94,22 @@ function Weapons.Shoot(player, Entities, weapon)
             local body = love.physics.newBody(world, player.x, player.y, "dynamic")
             local fixture = love.physics.newFixture(body, Entities.defaultShapes.bullet, 1)
             local angle = player.angle + (math.random(-spread * 100, spread * 100) / 100)
-            fixture:setUserData("bullet")
+            fixture:setUserData(Weapons.types.projectile)
             fixture:setMask(player.number)
             fixture:setCategory(player.number)
             body:setBullet(true)
             body:setAngle(angle)
-            body:setMass(body:getMass() * (weapon.mass or 1))
+            body:setMass(weapon.mass or body:getMass())
             body:applyLinearImpulse(math.cos(angle) * weapon.speed * 0.001 , math.sin(angle) * weapon.speed * 0.001)
-            Entities.list[body] = {
+            Entities.list[body] = 
+            {
                 body = body,
                 fixture = fixture,
                 angle = player.angle,
                 player = player,
                 life = weapon.BulletDuration or 2,
-                weapon = weapon}
+                weapon = weapon
+            }
             player.NextShoot = love.timer.getTime() + (weapon.shootDelay or 0.00001)  -- Default shoot delay if not specified
             bullets = bullets - 1
             magazine = magazine - 1

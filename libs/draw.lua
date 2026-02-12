@@ -118,15 +118,16 @@ function Draw.InGame(params)
     local types = {
         "wall",
         "entity",
-        "player"
+        "player",
+        "remImg"
     }
-    for _, v in pairs(Walls) do TTD[_] = v v.type = types[1] end
-    for _, v in pairs(Entities.list) do TTD[_] = v v.type = types[2] end
-    for _, v in pairs(Players.list) do TTD[_] = v v.type = types[3] end
+    for _, v in pairs(Walls)            do table.insert(TTD, v) v.type = types[1]  end
+    for _, v in pairs(Entities.list)    do table.insert(TTD, v) v.type = types[2] end
+    for _, v in pairs(Players.list)     do table.insert(TTD, v) v.type = types[3] end
     if Game.InHostedGame then
-        table.sort(TTD, function(a, b)
-            return love.physics.getDistance(a.fixture, player.fixture) > love.physics.getDistance(b.fixture, player.fixture)
-        end)
+        for _, v in pairs(TTD) do
+            v.dist = love.physics.getDistance(player.fixture, v.fixture)
+        end
     else
         for _, v in pairs(TTD) do
             if v.type == "wall" then
@@ -135,16 +136,18 @@ function Draw.InGame(params)
                 v.dist = (v.x - player.x)^2 + (v.y - player.y)^2
             end
         end
-        table.sort(TTD, function(a, b)
-            return a.dist > b.dist
-        end)
     end
-
-    -- Draw walls
+    for _, v in pairs(Entities.remImg) do table.insert(TTD, v) v.type = types[4] v.dist = (v.x - player.x)^2 + (v.y - player.y)^2 end
+    table.sort(TTD, function(a, b)
+        return a.dist > b.dist
+    end)
+    
     love.graphics.setColor(255, 255, 255, 255)
-
+    
     for key, object in pairs(TTD) do
+        -- print("drawing object " .. tostring(key) .. " of type " .. tostring(object.type) .. " at distance " .. tostring(object.dist))
         if object.type == "wall" then
+            -- Draw walls
             love.graphics.setLineWidth(1)
                 local relative_pos = {
                     s = { x = object.pos[1][1] - player.x, y = object.pos[1][2] - player.y },
@@ -223,25 +226,96 @@ function Draw.InGame(params)
             love.graphics.setColor(1, 1, 0, 1)
             local x, y = object.x, object.y or object.body:getPosition()
             love.graphics.points(x + 25, -y + 200)
-            
+ 
+            if object.weapon and object.weapon.type == Game.Weapons.types.ball then
+                local relative_pos = {
+                    x = x - player.x,
+                    y = y - player.y
+                }
+                local angle = math.atan2(relative_pos.y, relative_pos.x) - player.angle + player.fov / 2
+                -- local relative_angle = object.angle + angle
+                -- print(relative_angle)
+                local dist = math.sqrt(relative_pos.x^2 + relative_pos.y^2)
+                local screen_pos = {
+                    x = screen_width - (angle) * screen_width / player.fov,
+                    y = 500 * math.exp(-dist) + screen_height / 2
+                }
+                if screen_pos.x > large_sreen_width then
+                    screen_pos.x = screen_pos.x - large_sreen_width
+                elseif screen_pos.x < -large_sreen_width + screen_width then
+                    screen_pos.x = screen_pos.x + large_sreen_width
+                end
+                --if entity.body:geuserdata == ball
+                love.graphics.circle("fill", screen_pos.x, screen_pos.y, math.min(100 / dist, 100), 500)
+            end
+        elseif object.type == "remImg" then
+            local x, y = object.x, object.y
+            local x2, y2 = x+ math.cos(object.angle) * 10, y + math.sin(object.angle) * 10
             local relative_pos = {
                 x = x - player.x,
-                y = y - player.y
+                y = y - player.y,
+                x2 = x2 - player.x,
+                y2 = y2 - player.y
             }
-            local angle = math.atan2(relative_pos.y, relative_pos.x) - player.angle + player.fov / 2
-            local dist = math.sqrt(relative_pos.x^2 + relative_pos.y^2)
-            local screen_pos = {
-                x = screen_width - (angle) * screen_width / player.fov,
-                y = 500 * math.exp(-dist) + screen_height / 2
+            local angle = {y = math.atan2(relative_pos.y, relative_pos.x) - player.angle + player.fov / 2 ,
+                           p = math.atan(((object.height or 1.3) - player.height) / math.sqrt(relative_pos.x^2 + relative_pos.y^2))
             }
-            if screen_pos.x > large_sreen_width then
-                screen_pos.x = screen_pos.x - large_sreen_width
-            elseif screen_pos.x < -large_sreen_width + screen_width then
-                screen_pos.x = screen_pos.x + large_sreen_width
-            end
-            --if entity.body:geuserdata == ball
-            love.graphics.circle("fill", screen_pos.x, screen_pos.y, math.min(100 / dist, 100), 500)
 
+            local angle2 = {y = math.atan2(relative_pos.y2, relative_pos.x2) - player.angle + player.fov / 2,
+                            p = math.atan(((object.height or 1.3) - player.height) / math.sqrt(relative_pos.x2^2 + relative_pos.y2^2))
+            }
+            -- local relative_angle = object.angle + angle
+            local dist = math.sqrt(relative_pos.x^2 + relative_pos.y^2)
+            local dist2 = math.sqrt(relative_pos.x2^2 + relative_pos.y2^2)
+            if object.imgType == "bullet" then
+                local screen_pos = {
+                    x   = screen_width - (angle.y) * screen_width / player.fov,
+                    y   = screen_height / 2 - angle.p * screen_height / ((screen_height/screen_width) * player.fov),
+                    x2  = screen_width - (angle2.y) * screen_width / player.fov,
+                    y2  = screen_height / 2 - angle2.p * screen_height / ((screen_height/screen_width) * player.fov)
+                }
+                if screen_pos.x > large_sreen_width then
+                    screen_pos.x = screen_pos.x - large_sreen_width -- Don't draw if it's too far to the right (behind the player)
+                elseif screen_pos.x < -large_sreen_width + screen_width  then
+                    screen_pos.x = screen_pos.x2 + large_sreen_width-- Wrap around to the left if it's too far to the left
+                end
+                if screen_pos.x2 > large_sreen_width then
+                    screen_pos.x2 = screen_pos.x2 - large_sreen_width
+                elseif screen_pos.x2 < -large_sreen_width + screen_width then
+                    screen_pos.x2 = screen_pos.x2 + large_sreen_width
+                end
+
+                --If not enough angle then make it so it looks coming out of the nozzle?
+                if math.abs(screen_pos.x - screen_pos.x2) < 10  then
+                    local test = 0.5
+                    if player.isZooming then
+                        screen_pos.x = (screen_width/2 + math.cos(object.angle) * 5) * 1/(dist*test) + screen_pos.x * (1 - 1/(dist*test))
+                        screen_pos.y = math.min(screen_pos.y, screen_height/2 + screen_height/9) -- Don't let the bullet go below a certain point on the screen, determined by the weapon I guesss
+                    else                        screen_pos.x = (screen_width/2) * 1/(dist*0.5) + screen_pos.x * (1 - 1/(dist*0.5))
+                        screen_pos.y = math.min(screen_pos.y, screen_height/2 + screen_height/9)
+                        screen_pos.x = (screen_width - screen_width/9  + math.cos(object.angle) * 5) * 1/(dist*test) + screen_pos.x * (1 - 1/(dist*test))
+                    end
+                end
+                love.graphics.setColor(1, 0, 0.5, 1)
+                love.graphics.setLineJoin("bevel")
+                love.graphics.setLineStyle("rough")
+                love.graphics.setLineWidth(7)
+                love.graphics.line(screen_pos.x, screen_pos.y , screen_pos.x2, screen_pos.y2)
+
+            elseif object.imgType == "text" then
+                local screen_pos = 
+                {
+                     x = screen_width - (angle.y) * screen_width / player.fov,
+                     y = screen_height / 2 - angle.p * screen_height / ((screen_height/screen_width) * player.fov) + object.life * screen_height/10 -screen_height/5 
+                } 
+                if screen_pos.x > large_sreen_width then
+                    screen_pos.x = screen_pos.x - large_sreen_width 
+                elseif screen_pos.x < -large_sreen_width + screen_width then
+                    screen_pos.x = screen_pos.x + large_sreen_width 
+                end
+                love.graphics.setColor(1, 0.1, 0.1, object.life * 2)
+                love.graphics.print(object.text, screen_pos.x, screen_pos.y,  nil ,  5, nil, nil, nil, 0.1* math.sin(love.timer.getTime()))
+            end
         else
             local otherplayer = object
             otherplayer.height = otherplayer.height or 1.6  -- Default height if not specified

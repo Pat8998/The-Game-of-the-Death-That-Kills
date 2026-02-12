@@ -139,13 +139,31 @@ function InGame.updateHost(params)
     end
 
     for key, entity in pairs(Entities.list) do
-        if entity.fixture:getUserData() == "bullet" then
+        if entity.fixture:getUserData() == Game.Weapons.types.projectile then
             entity.life = entity.life - dt
+            if entity.life < entity.weapon.BulletDuration - 0.001 and entity.weapon.type ~= Game.Weapons.types.ball then
+                table.insert(Entities.remImg,{
+                    x = entity.x,
+                    y = entity.y,
+                    angle = entity.angle,
+                    imgType = "bullet",
+                    life = entity.weapon.speed *0.1
+                    -- life = 0.01
+                }) 
+            end
             --print(entity.life)
             if entity.life <= 0 then
                 DestroyEntity(entity)
             end
         end
+    end
+    for key, img in pairs(Entities.remImg) do
+            img.life = img.life - dt
+            -- print("img " .. key.. " life: " .. img.life .. "img" .. tostring(img))
+            --print(entity.life)
+            if img.life <= 0 then
+                table.remove(Entities.remImg, key)
+            end
     end
     if Game.IsPublic then
         Multiplayer.ServerSend(

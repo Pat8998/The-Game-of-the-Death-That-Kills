@@ -1,5 +1,5 @@
 local CollisionHandler = {}
-
+local Weapons = require "libs.weapons"
 CollisionHandler.Game = {}
 
 function CollisionHandler.beginContact(a, b, coll)
@@ -7,10 +7,11 @@ function CollisionHandler.beginContact(a, b, coll)
     -- Get userdata of the colliding objects
     local userdataA = a:getUserData()
     local userdataB = b:getUserData()
+    local x, y = coll:getPositions()
     
     local bullet, other
-    if userdataA == "bullet" or userdataB == "bullet" then
-        if userdataA == "bullet" then
+    if userdataA == Weapons.types.projectile or userdataB == Weapons.types.projectile then
+        if userdataA == Weapons.types.projectile then
             bullet = a
             other = b
         else
@@ -30,7 +31,8 @@ function CollisionHandler.beginContact(a, b, coll)
                                 CollisionHandler.Game.Gamemodes.OnPlayerHit({
                                     hit = p,
                                     shooter = shooter,
-                                    weapon = weapon
+                                    weapon = weapon,
+                                    pos = {x=x, y=y}
                                 })
                             end
                         })
@@ -45,7 +47,7 @@ function CollisionHandler.beginContact(a, b, coll)
             DestroyEntity(Entities.list[bullet:getBody()])
             -- end
         else
-            print("Bullet has no body!")
+            print("Collision with " .. other:getUserData() .. " Not handled, Reason : Bullet has no body!" )
         end
     end
 end

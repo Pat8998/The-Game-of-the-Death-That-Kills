@@ -103,11 +103,19 @@ function love.load()
 
 
 
-    Entities = {defaultShapes = {
-        point = love.physics.newEdgeShape(0, 0, 0, 0),
-        bullet = love.physics.newCircleShape(0.01)
-        -- bullet = love.physics.newEdgeShape(0, 0, 10, 0)  --IDK Crashes PHYSICS
-    }, list = {}}
+    Entities = {
+        defaultShapes = 
+        {
+            point = love.physics.newEdgeShape(0, 0, 0, 0),
+            bullet = love.physics.newCircleShape(0.01)
+            -- bullet = love.physics.newEdgeShape(0, 0, 10, 0)  --IDK Crashes PHYSICS
+        },
+        -- placeholderBody = love.physics.newBody(nil, 0, 0, "static"),  -- Placeholder body for fixtures that need one but aren't attached to an entity
+        list = {},
+        remImg = {}
+    }
+    Game.Entities = Entities -- Assign the Entities table to Game for global access
+
 
 
     love.physics.setMeter(64)
