@@ -47,17 +47,17 @@ Weapons.list = {
         rechargetime = 1.5,  -- Time to recharge the weapon
         maxmagazine = 50,  -- Maximum number of bullets in the magazine
     },
-    Ball = {
-        name = "Ball",
-        number = 4,
-        shootDelay = 0.01,
-        BulletDuration = 2,
-        speed = 225,
-        spread = 10*math.pi / 180,  -- Spread in rads
-        damage = 0,
-        mass = 3,
-        type =  "ball" --The kind which doesnt leave a trace
-    }
+    -- Ball = {
+    --     name = "Ball",
+    --     number = 4,
+    --     shootDelay = 0.01,
+    --     BulletDuration = 2,
+    --     speed = 225000,
+    --     spread = 10*math.pi / 180,  -- Spread in rads
+    --     damage = 0,
+    --     mass = 3,
+    --     type =  Weapons.types.ball --The kind which doesnt leave a trace
+    -- }
 }
 
 Weapons.weaponsNumber = {}

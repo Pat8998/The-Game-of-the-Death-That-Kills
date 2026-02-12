@@ -50,11 +50,11 @@ function InGame.updateHost(params)
     else
         local movement = love.keyboard.isDown("z") or love.keyboard.isDown("s") or love.keyboard.isDown("d") or love.keyboard.isDown("q") --or love.keyboard.isScancodeDown('volumeup')
         if localplayer.isZooming and (movement) then
-            localplayer.moveSpeed = 1100
+            localplayer.moveSpeed = 11 
         elseif (love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")) and movement then
-                localplayer.moveSpeed = 2 * 2200
+                localplayer.moveSpeed = 2 * 22 
             elseif movement then
-                localplayer.moveSpeed = 1 * 2200
+                localplayer.moveSpeed = 1 * 22 
             elseif not localplayer.Glide then
                 localplayer.moveSpeed = 0
         end
@@ -285,11 +285,11 @@ function InGame.updateClient(params)
             local movement = love.keyboard.isDown("z") or love.keyboard.isDown("s") or love.keyboard.isDown("d") or love.keyboard.isDown("q")
             if movement then
                 if localplayer.isZooming then
-                   localplayer.moveSpeed = 1100
+                   localplayer.moveSpeed = 11 
                 elseif love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift") then
-                    localplayer.moveSpeed = 4400
+                    localplayer.moveSpeed = 44 
                 else
-                    localplayer.moveSpeed = 2200
+                    localplayer.moveSpeed = 22 
                 end
             elseif not localplayer.Glide then
                     localplayer.moveSpeed = 0
@@ -492,16 +492,24 @@ function InGame.UpdatePlayers(params)
                     player.angle = player.angle + 2 * math.pi
                 end
                 player.dir = player.angle + math.atan2(lx, ly) + math.pi
-                local movement = lx ~= 0 or ly ~= 0
-                player.moveSpeed = ((player.isZooming and movement) and 1100 or player.joystick:isGamepadDown('leftstick') and 4400 or movement and 2200 or 0) * (math.max(math.abs(lx), math.abs(ly)))
+                local movement = math.abs(lx) >= player.deadzone or math.abs(ly) >= player.deadzone
+                player.moveSpeed = ((player.isZooming and movement) and 11  or player.joystick:isGamepadDown('leftstick') and 44  or movement and 22  or 0) * (math.max(math.abs(lx), math.abs(ly)))
             end
             player.fov = player.isZooming and math.max(math.pi / 3, player.fov - math.pi / 6 * params.dt * 4) or math.min(math.pi / 2, player.fov + math.pi / 6 * params.dt * 4)
             player.ScaleFactor = player.isZooming and math.min(3, player.ScaleFactor + params.dt * 4) or math.max(2, player.ScaleFactor - params.dt * 4)
         end
-        player.body:setLinearVelocity(
-            math.cos(player.dir) * player.moveSpeed * params.dt,
-            math.sin(player.dir) * player.moveSpeed * params.dt
-        )
+        if player.oldMov then
+            player.body:setLinearVelocity(
+                math.cos(player.dir) * player.moveSpeed * params.dt *100,
+                math.sin(player.dir) * player.moveSpeed * params.dt * 100
+            )
+        else
+            player.body:setLinearDamping(10) -- Add damping to slow down when not moving
+            player.body:applyLinearImpulse(
+                math.cos(player.dir) * player.moveSpeed * params.dt * 0.1,
+                math.sin(player.dir) * player.moveSpeed * params.dt * 0.1
+            )
+        end
         params.Game.Debug = "Player " .. player.number .. " Speed: " .. tostring(player.moveSpeed)
         .. "pos: " .. tostring(math.floor(player.body:getX())) .. ", " .. tostring(math.floor(player.body:getY()))
     end

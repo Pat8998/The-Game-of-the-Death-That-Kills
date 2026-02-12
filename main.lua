@@ -387,6 +387,8 @@ function love.keypressed(key, scan)
         LocalPlayer.Health = LocalPlayer.Health - 1
     elseif key == "kp0" then
         Gamemodes.reset(Game, Game.Players)
+    elseif key == "f" then
+        LocalPlayer.oldMov = not LocalPlayer.oldMov
     end
     if key == 'r' then
         LocalPlayer.magazine[LocalPlayer.weapon.name] = 0 

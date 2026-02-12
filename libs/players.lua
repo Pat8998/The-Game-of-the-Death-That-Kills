@@ -6,6 +6,7 @@ function Player.createPlayer(number, world, peer, joystick)  --define xy angle b
         number = number,
         peer = peer or "local",
         joystick = joystick ,  -- Joystick object if available
+        sensivity = 1, deadzone = 0.01,
         x = 90 
         + number * 50 --PUT THAT BACK , HERE FOR TESTING PURPOSES
         ,y = 204,
@@ -25,10 +26,11 @@ function Player.createPlayer(number, world, peer, joystick)  --define xy angle b
         maxHealth = 100,
         NextShoot = 0.1,
         NextWeaponSwitch = 0.1,  -- may regroup in player.timers table
-        weapon = Weapons.list.Ball,
-        -- weapon = Weapons.list.Default,  -- Default weapon
+        -- weapon = Weapons.list.Ball,
+        weapon = Weapons.list.Default,  -- Default weapon
         magazine = {},
         Score = 0,
+        oldMov = false,
     }
     localplayer.body = love.physics.newBody(world,localplayer.x,localplayer.y,"dynamic")
     localplayer.fixture = love.physics.newFixture(localplayer.body, localplayer.shape, 1)
